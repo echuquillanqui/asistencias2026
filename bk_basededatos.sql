@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS `schedules` (
   `name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
   `entry_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `breakfast_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `breakfast_return_time` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `lunch_out_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `lunch_return_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `check_out_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
@@ -79,8 +80,8 @@ CREATE TABLE IF NOT EXISTS `schedules` (
 
 -- Volcando datos para la tabla control_acceso_db.schedules: ~1 rows (aproximadamente)
 DELETE FROM `schedules`;
-INSERT INTO `schedules` (`id`, `name`, `entry_time`, `breakfast_time`, `lunch_out_time`, `lunch_return_time`, `check_out_time`, `created_at`) VALUES
-	(1, 'HORARIO GENERAL', '08:00', '09:30', '13:00', '14:00', '18:00', '2025-11-21 09:00:00');
+INSERT INTO `schedules` (`id`, `name`, `entry_time`, `breakfast_time`, `breakfast_return_time`, `lunch_out_time`, `lunch_return_time`, `check_out_time`, `created_at`) VALUES
+	(1, 'HORARIO GENERAL', '08:00', '09:30', '09:45', '13:00', '14:00', '18:00', '2025-11-21 09:00:00');
 
 -- Volcando estructura para tabla control_acceso_db.employees
 CREATE TABLE IF NOT EXISTS `employees` (

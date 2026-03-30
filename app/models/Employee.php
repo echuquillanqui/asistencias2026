@@ -129,12 +129,13 @@ class Employee {
 
     // 10. CREAR HORARIO
     public function createSchedule($data) {
-        $query = "INSERT INTO schedules (name, entry_time, breakfast_time, lunch_out_time, lunch_return_time, check_out_time)
-                  VALUES (:name, :entry, :breakfast, :lunch_out, :lunch_return, :check_out)";
+        $query = "INSERT INTO schedules (name, entry_time, breakfast_time, breakfast_return_time, lunch_out_time, lunch_return_time, check_out_time)
+                  VALUES (:name, :entry, :breakfast, :breakfast_return, :lunch_out, :lunch_return, :check_out)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':name', $data['name']);
         $stmt->bindParam(':entry', $data['entry_time']);
         $stmt->bindParam(':breakfast', $data['breakfast_time']);
+        $stmt->bindParam(':breakfast_return', $data['breakfast_return_time']);
         $stmt->bindParam(':lunch_out', $data['lunch_out_time']);
         $stmt->bindParam(':lunch_return', $data['lunch_return_time']);
         $stmt->bindParam(':check_out', $data['check_out_time']);

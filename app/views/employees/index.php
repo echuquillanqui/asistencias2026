@@ -243,7 +243,8 @@
                     <input type="text" name="schedule_name" class="form-control" required placeholder="Ej: TURNO MAÑANA">
                   </div>
                   <div class="mb-2"><label class="form-label">Entrada</label><input type="text" name="entry_time" class="form-control" value="08:00" required></div>
-                  <div class="mb-2"><label class="form-label">Desayuno</label><input type="text" name="breakfast_time" class="form-control" value="09:30" required></div>
+                  <div class="mb-2"><label class="form-label">Salida Desayuno</label><input type="text" name="breakfast_time" class="form-control" value="09:30" required></div>
+                  <div class="mb-2"><label class="form-label">Retorno Desayuno</label><input type="text" name="breakfast_return_time" class="form-control" value="09:45"></div>
                   <div class="mb-2"><label class="form-label">Salida Almuerzo</label><input type="text" name="lunch_out_time" class="form-control" value="13:00" required></div>
                   <div class="mb-2"><label class="form-label">Retorno Almuerzo</label><input type="text" name="lunch_return_time" class="form-control" value="14:00" required></div>
                   <div class="mb-3"><label class="form-label">Salida Final</label><input type="text" name="check_out_time" class="form-control" value="18:00" required></div>

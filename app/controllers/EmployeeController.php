@@ -7,6 +7,16 @@ class EmployeeController {
     private $db;
     private $availableSites = ['HUANCAYO', 'LIMA', 'PASCO', 'SAN RAMON', 'HUANCAVELICA'];
 
+    private static $scheduleBreakfastReturnChecked = false;
+
+    private function ensureScheduleBreakfastReturnColumn() {
+        if (self::$scheduleBreakfastReturnChecked) {
+            return;
+        }
+        $this->db->exec("ALTER TABLE schedules ADD COLUMN IF NOT EXISTS breakfast_return_time VARCHAR(255) NULL AFTER breakfast_time");
+        self::$scheduleBreakfastReturnChecked = true;
+    }
+
     public function __construct() {
         if (session_status() == PHP_SESSION_NONE) session_start();
         
@@ -122,6 +132,8 @@ class EmployeeController {
             exit;
         }
 
+        $this->ensureScheduleBreakfastReturnColumn();
+
         $name = strtoupper(trim($_POST['schedule_name'] ?? ''));
         if ($name === '') {
             header("Location: ?c=Employee&err=horario_invalido");
@@ -132,6 +144,7 @@ class EmployeeController {
             'name' => $name,
             'entry_time' => strtoupper(trim($_POST['entry_time'] ?? '08:00')),
             'breakfast_time' => strtoupper(trim($_POST['breakfast_time'] ?? '09:30')),
+            'breakfast_return_time' => strtoupper(trim($_POST['breakfast_return_time'] ?? '')),
             'lunch_out_time' => strtoupper(trim($_POST['lunch_out_time'] ?? '13:00')),
             'lunch_return_time' => strtoupper(trim($_POST['lunch_return_time'] ?? '14:00')),
             'check_out_time' => strtoupper(trim($_POST['check_out_time'] ?? '18:00')),
