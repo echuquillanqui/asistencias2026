@@ -54,6 +54,10 @@
                                 <label class="form-label">Cargo / Puesto</label>
                                 <input type="text" name="position" class="form-control" required placeholder="Ej: Analista">
                             </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Sede</label>
+                                <input type="text" name="site_name" class="form-control" required placeholder="Ej: Sede Norte">
+                            </div>
                         </div>
 
                         <hr>

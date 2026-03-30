@@ -69,6 +69,10 @@
                             <label class="form-label fw-bold">Cargo</label>
                             <input type="text" name="position" class="form-control" required value="<?php echo $emp['position']; ?>">
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Sede</label>
+                            <input type="text" name="site_name" class="form-control" required value="<?php echo htmlspecialchars($emp['site_name'] ?? ''); ?>">
+                        </div>
                     </div>
 
                     <hr class="my-4">

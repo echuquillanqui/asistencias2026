@@ -50,7 +50,8 @@ class EmployeeController {
                 'last_name' => $_POST['last_name'],
                 'email' => $_POST['email'],
                 'department_id' => $_POST['department_id'],
-                'position' => $_POST['position']
+                'position' => $_POST['position'],
+                'site_name' => $_POST['site_name']
             ];
             
             // El modelo se encarga de asignar la contraseña por defecto '123456'
@@ -90,7 +91,8 @@ class EmployeeController {
                 'last_name' => $_POST['last_name'],
                 'email' => $_POST['email'],
                 'department_id' => $_POST['department_id'],
-                'position' => $_POST['position']
+                'position' => $_POST['position'],
+                'site_name' => $_POST['site_name']
             ];
             $this->employeeModel->update($data);
             header("Location: ?c=Employee&msg=actualizado");

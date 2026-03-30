@@ -42,8 +42,8 @@ class Employee {
     public function create($data) {
         $defaultPass = password_hash("123456", PASSWORD_DEFAULT);
         $query = "INSERT INTO " . $this->table . " 
-                 (employee_code, first_name, last_name, email, password, department_id, position, status) 
-                 VALUES (:code, :fname, :lname, :email, :pass, :dept, :pos, 'activo')";
+                 (employee_code, first_name, last_name, email, password, department_id, position, site_name, status) 
+                 VALUES (:code, :fname, :lname, :email, :pass, :dept, :pos, :site, 'activo')";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':code', $data['employee_code']);
@@ -53,6 +53,7 @@ class Employee {
         $stmt->bindParam(':pass', $defaultPass);
         $stmt->bindParam(':dept', $data['department_id']);
         $stmt->bindParam(':pos', $data['position']);
+        $stmt->bindParam(':site', $data['site_name']);
         return $stmt->execute();
     }
 
@@ -60,7 +61,7 @@ class Employee {
     public function update($data) {
         $query = "UPDATE " . $this->table . " 
                   SET first_name = :fname, last_name = :lname, 
-                      email = :email, department_id = :dept, position = :pos, employee_code = :code
+                      email = :email, department_id = :dept, position = :pos, employee_code = :code, site_name = :site
                   WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':fname', $data['first_name']);
@@ -69,6 +70,7 @@ class Employee {
         $stmt->bindParam(':dept', $data['department_id']);
         $stmt->bindParam(':pos', $data['position']);
         $stmt->bindParam(':code', $data['employee_code']);
+        $stmt->bindParam(':site', $data['site_name']);
         $stmt->bindParam(':id', $data['id']);
         return $stmt->execute();
     }

@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS `attendance_logs` (
   `date_log` date NOT NULL,
   `check_in_time` time DEFAULT NULL,
   `check_out_time` time DEFAULT NULL,
+  `source_ip` varchar(45) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `total_hours` decimal(5,2) DEFAULT NULL,
   `status` enum('a_tiempo','tarde') COLLATE utf8mb4_general_ci DEFAULT 'a_tiempo',
   PRIMARY KEY (`id`),
@@ -35,10 +36,10 @@ CREATE TABLE IF NOT EXISTS `attendance_logs` (
 
 -- Volcando datos para la tabla control_acceso_db.attendance_logs: ~2 rows (aproximadamente)
 DELETE FROM `attendance_logs`;
-INSERT INTO `attendance_logs` (`id`, `employee_id`, `date_log`, `check_in_time`, `check_out_time`, `total_hours`, `status`) VALUES
-	(1, 2, '2025-11-21', '10:30:15', '10:31:36', NULL, 'a_tiempo'),
-	(2, 3, '2025-11-21', '10:39:53', '10:41:42', NULL, 'a_tiempo'),
-	(3, 1, '2025-11-23', '16:04:54', NULL, NULL, 'a_tiempo');
+INSERT INTO `attendance_logs` (`id`, `employee_id`, `date_log`, `check_in_time`, `check_out_time`, `source_ip`, `total_hours`, `status`) VALUES
+	(1, 2, '2025-11-21', '10:30:15', '10:31:36', '192.168.1.10', NULL, 'a_tiempo'),
+	(2, 3, '2025-11-21', '10:39:53', '10:41:42', '192.168.1.10', NULL, 'a_tiempo'),
+	(3, 1, '2025-11-23', '16:04:54', NULL, '192.168.1.11', NULL, 'a_tiempo');
 
 -- Volcando estructura para tabla control_acceso_db.departments
 CREATE TABLE IF NOT EXISTS `departments` (
@@ -68,6 +69,7 @@ CREATE TABLE IF NOT EXISTS `employees` (
   `password` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `department_id` int DEFAULT NULL,
   `position` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `site_name` varchar(120) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `photo_path` varchar(255) COLLATE utf8mb4_general_ci DEFAULT 'default.png',
   `status` enum('activo','inactivo') COLLATE utf8mb4_general_ci DEFAULT 'activo',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -79,10 +81,10 @@ CREATE TABLE IF NOT EXISTS `employees` (
 
 -- Volcando datos para la tabla control_acceso_db.employees: ~2 rows (aproximadamente)
 DELETE FROM `employees`;
-INSERT INTO `employees` (`id`, `employee_code`, `first_name`, `last_name`, `email`, `password`, `department_id`, `position`, `photo_path`, `status`, `created_at`) VALUES
-	(1, 'EMP001', 'VICTOR', 'RAMOS', 'victor.rs.datsoft@gmail.com', '$2y$10$hjoa6/izjbON6303KeT9GuxstoJqZlEdq.E7N.Y7KBX7qWQzxbq0y', 5, 'JEFE DE SISTEMAS', 'default.png', 'activo', '2025-11-21 09:30:28'),
-	(2, 'EMP002', 'CARLOS', 'RAMIREZ', 'carlosramirez@correo.com', '$2y$10$cOhxXeHlMBYzpdFVTcx/2.rwrHetLpnXBRDIodanipx6G.FBNEESi', 2, 'ASISTENTE ADMINISTRATIVO', 'default.png', 'activo', '2025-11-21 10:26:33'),
-	(3, 'EMP003', 'MARIA', 'ARIAS', 'mariaarias@correo.com', '$2y$10$NebEGaM19vO7si.8ctlfvuJQPaHPgh0j6znFxLs8PQJVeM2vU4khm', 3, 'JEFE DE RRHH', 'default.png', 'activo', '2025-11-21 10:37:16');
+INSERT INTO `employees` (`id`, `employee_code`, `first_name`, `last_name`, `email`, `password`, `department_id`, `position`, `site_name`, `photo_path`, `status`, `created_at`) VALUES
+	(1, 'EMP001', 'VICTOR', 'RAMOS', 'victor.rs.datsoft@gmail.com', '$2y$10$hjoa6/izjbON6303KeT9GuxstoJqZlEdq.E7N.Y7KBX7qWQzxbq0y', 5, 'JEFE DE SISTEMAS', 'SEDE CENTRAL', 'default.png', 'activo', '2025-11-21 09:30:28'),
+	(2, 'EMP002', 'CARLOS', 'RAMIREZ', 'carlosramirez@correo.com', '$2y$10$cOhxXeHlMBYzpdFVTcx/2.rwrHetLpnXBRDIodanipx6G.FBNEESi', 2, 'ASISTENTE ADMINISTRATIVO', 'SEDE NORTE', 'default.png', 'activo', '2025-11-21 10:26:33'),
+	(3, 'EMP003', 'MARIA', 'ARIAS', 'mariaarias@correo.com', '$2y$10$NebEGaM19vO7si.8ctlfvuJQPaHPgh0j6znFxLs8PQJVeM2vU4khm', 3, 'JEFE DE RRHH', 'SEDE CENTRAL', 'default.png', 'activo', '2025-11-21 10:37:16');
 
 -- Volcando estructura para tabla control_acceso_db.incidents
 CREATE TABLE IF NOT EXISTS `incidents` (
@@ -110,12 +112,13 @@ CREATE TABLE IF NOT EXISTS `settings` (
   `setting_value` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `setting_name` (`setting_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Volcando datos para la tabla control_acceso_db.settings: ~1 rows (aproximadamente)
 DELETE FROM `settings`;
 INSERT INTO `settings` (`id`, `setting_name`, `setting_value`) VALUES
-	(1, 'entry_time', '08:00');
+	(1, 'entry_time', '08:00'),
+	(2, 'kiosk_allowed_ips', '192.168.1.10,192.168.1.11');
 
 -- Volcando estructura para tabla control_acceso_db.users
 CREATE TABLE IF NOT EXISTS `users` (

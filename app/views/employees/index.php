@@ -63,7 +63,7 @@
             <div class="card-body p-0">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
-                        <tr><th class="ps-4">Estado</th><th>Nombre Completo</th><th>Departamento</th><th>Cargo</th><th class="text-end pe-4">Acciones</th></tr>
+                        <tr><th class="ps-4">Estado</th><th>Nombre Completo</th><th>Departamento</th><th>Sede</th><th>Cargo</th><th class="text-end pe-4">Acciones</th></tr>
                     </thead>
                     <tbody>
                         <?php if(isset($employees) && count($employees) > 0): ?>
@@ -72,6 +72,15 @@
                                 <td class="ps-4"><?php echo ($emp['status'] == 'activo') ? '<span class="badge bg-success">ACTIVO</span>' : '<span class="badge bg-danger">INACTIVO</span>'; ?></td>
                                 <td><div class="fw-bold"><?php echo $emp['first_name'] . ' ' . $emp['last_name']; ?></div><small class="text-muted"><?php echo $emp['employee_code']; ?></small></td>
                                 <td><?php echo $emp['department_name']; ?></td>
+                                <td>
+                                    <?php if (!empty($emp['site_name'])): ?>
+                                        <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle">
+                                            <i class="bi bi-geo-alt-fill"></i> <?php echo htmlspecialchars($emp['site_name']); ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge text-bg-secondary">Sin sede</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo $emp['position']; ?></td>
                                 <td class="text-end pe-4">
                                     <?php if($emp['status'] == 'activo'): ?>
@@ -87,7 +96,7 @@
                             </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <tr><td colspan="5" class="text-center p-5 text-muted">No hay empleados registrados.</td></tr>
+                            <tr><td colspan="6" class="text-center p-5 text-muted">No hay empleados registrados.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -137,6 +146,10 @@
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Cargo / Puesto</label>
                     <input type="text" name="position" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Sede</label>
+                    <input type="text" name="site_name" class="form-control" required placeholder="Ej: Sede Central">
                 </div>
                 
                 <div class="col-12 mt-4">
