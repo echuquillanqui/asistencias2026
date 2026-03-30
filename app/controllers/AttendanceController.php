@@ -111,9 +111,9 @@ class AttendanceController {
 
             if(!empty($code)) {
                 // A. Buscar al empleado por su código
-                $queryEmp = "SELECT e.id, e.first_name, s.entry_time as schedule_entry_time \
-                             FROM employees e \
-                             LEFT JOIN schedules s ON e.schedule_id = s.id \
+                $queryEmp = "SELECT e.id, e.first_name, s.entry_time as schedule_entry_time
+                             FROM employees e
+                             LEFT JOIN schedules s ON e.schedule_id = s.id
                              WHERE e.employee_code = :code LIMIT 1";
                 $stmtEmp = $db->prepare($queryEmp);
                 $stmtEmp->bindParam(':code', $code);
