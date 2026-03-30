@@ -18,7 +18,7 @@ function renderMenu($c, $a) {
         </li>
 
         <?php if(isset($_SESSION['role']) && $_SESSION['role'] == 'admin'): ?>
-            <li class="text-muted small fw-bold px-3 mt-3 mb-1">ADMINISTRACIÓN</li>
+            <li class="text small fw-bold px-3 mt-3 mb-1">ADMINISTRACIÓN</li>
             
             <li>
                 <a href="?c=Employee" class="<?php echo ($c=='Employee') ? 'active' : ''; ?>">
