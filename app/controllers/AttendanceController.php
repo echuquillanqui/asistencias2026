@@ -12,11 +12,15 @@ class AttendanceController {
             return;
         }
 
-        $db->exec("ALTER TABLE attendance_logs ADD COLUMN IF NOT EXISTS breakfast_return_time TIME NULL AFTER breakfast_time");
-
         $stmt = $db->prepare("SHOW COLUMNS FROM attendance_logs LIKE 'breakfast_return_time'");
         $stmt->execute();
         self::$hasBreakfastReturnColumn = (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!self::$hasBreakfastReturnColumn) {
+            $db->exec("ALTER TABLE attendance_logs ADD COLUMN breakfast_return_time TIME NULL AFTER breakfast_time");
+            self::$hasBreakfastReturnColumn = true;
+        }
+
         self::$breakfastReturnChecked = true;
     }
 
