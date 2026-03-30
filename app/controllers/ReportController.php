@@ -9,6 +9,17 @@ class ReportController {
     private $employeeModel;
     private $settingModel; // 2. VARIABLE NUEVA
     private $db;
+
+    private function minutesLate($checkInTime, $limitTime) {
+        if (empty($checkInTime) || empty($limitTime)) {
+            return 0;
+        }
+        $diff = strtotime($checkInTime) - strtotime($limitTime);
+        if ($diff <= 0) {
+            return 0;
+        }
+        return (int)ceil($diff / 60);
+    }
     
     private function getFirstScheduleTime($scheduleValue, $fallback = '08:00:00') {
         $parts = array_filter(array_map('trim', explode(',', (string)$scheduleValue)));
@@ -62,14 +73,13 @@ class ReportController {
 
             $data = $this->attendanceModel->getHistoryByDate($start, $end);
             
-            $filename = "Reporte_" . date('Ymd') . ".csv";
-            header('Content-Type: text/csv; charset=utf-8');
+            $filename = "Reporte_Asistencia_" . date('Ymd') . ".xls";
+            header('Content-Type: application/vnd.ms-excel; charset=utf-8');
             header('Content-Disposition: attachment; filename=' . $filename);
-            $output = fopen('php://output', 'w');
-            fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
-            
-            fputcsv($output, ['Codigo', 'Empleado', 'Depto', 'Fecha', 'Entrada', 'Desayuno', 'Salida Almuerzo', 'Retorno Almuerzo', 'Salida', 'Horas', 'Estado', 'Puntualidad']);
-            
+
+            $xmlRowsMain = [];
+            $summary = [];
+
             foreach ($data as $row) {
                 $horas = "--"; 
                 $puntual = "Puntual";
@@ -84,24 +94,108 @@ class ReportController {
                     : $horaLimite;
 
                 if ($row['check_in_time'] > $horaLimiteEmpleado) $puntual = "TARDE";
+                $minutosTarde = $this->minutesLate($row['check_in_time'], $horaLimiteEmpleado);
                 
                 $est = ($row['check_out_time']) ? 'Completado' : 'En Turno';
-                fputcsv($output, [
-                    $row['employee_code'],
-                    $row['first_name'].' '.$row['last_name'],
-                    $row['department'],
-                    $row['date_log'],
-                    $row['check_in_time'],
-                    $row['breakfast_time'],
-                    $row['lunch_out_time'],
-                    $row['lunch_return_time'],
-                    $row['check_out_time'],
-                    $horas,
-                    $est,
-                    $puntual
-                ]);
+                $employeeKey = (string)$row['employee_code'];
+                if (!isset($summary[$employeeKey])) {
+                    $summary[$employeeKey] = [
+                        'codigo' => $row['employee_code'],
+                        'empleado' => $row['first_name'].' '.$row['last_name'],
+                        'dias_tarde' => 0,
+                        'minutos_tarde' => 0
+                    ];
+                }
+
+                if ($puntual === "TARDE") {
+                    $summary[$employeeKey]['dias_tarde']++;
+                    $summary[$employeeKey]['minutos_tarde'] += $minutosTarde;
+                }
+
+                $entradaStyle = ($puntual === "TARDE") ? ' ss:StyleID="lateCell"' : '';
+                $xmlRowsMain[] =
+                    '<Row>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$row['employee_code']) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars($row['first_name'].' '.$row['last_name']) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$row['department']) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$row['date_log']) . '</Data></Cell>'
+                    . '<Cell' . $entradaStyle . '><Data ss:Type="String">' . htmlspecialchars((string)$row['check_in_time']) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$row['breakfast_time']) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)($row['breakfast_return_time'] ?? '')) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$row['lunch_out_time']) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$row['lunch_return_time']) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$row['check_out_time']) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$horas) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$est) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$puntual) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="Number">' . (int)$minutosTarde . '</Data></Cell>'
+                    . '</Row>';
             }
-            fclose($output); exit;
+
+            $xmlRowsSummary = [];
+            foreach ($summary as $item) {
+                $descuentoDias = intdiv((int)$item['dias_tarde'], 3);
+                $sobrantes = (int)$item['dias_tarde'] % 3;
+                $minPendientes = ($sobrantes > 0) ? (int)$item['minutos_tarde'] : 0;
+                $xmlRowsSummary[] =
+                    '<Row>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$item['codigo']) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$item['empleado']) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="Number">' . (int)$item['dias_tarde'] . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="Number">' . (int)$item['minutos_tarde'] . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="Number">' . $descuentoDias . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="Number">' . $minPendientes . '</Data></Cell>'
+                    . '</Row>';
+            }
+
+            echo '<?xml version="1.0" encoding="UTF-8"?>';
+            echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" '
+                . 'xmlns:o="urn:schemas-microsoft-com:office:office" '
+                . 'xmlns:x="urn:schemas-microsoft-com:office:excel" '
+                . 'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
+            echo '<Styles>'
+                . '<Style ss:ID="header"><Font ss:Bold="1"/><Interior ss:Color="#D9E1F2" ss:Pattern="Solid"/></Style>'
+                . '<Style ss:ID="lateCell"><Font ss:Color="#FF0000" ss:Bold="1"/></Style>'
+                . '</Styles>';
+
+            echo '<Worksheet ss:Name="Asistencia">';
+            echo '<Table>';
+            echo '<Row>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Código</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Empleado</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Depto</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Fecha</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Entrada</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Salida Desayuno</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Retorno Desayuno</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Salida Almuerzo</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Retorno Almuerzo</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Salida</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Horas</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Estado</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Puntualidad</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Minutos Tarde</Data></Cell>'
+                . '</Row>';
+            echo implode('', $xmlRowsMain);
+            echo '</Table>';
+            echo '</Worksheet>';
+
+            echo '<Worksheet ss:Name="Resumen Tardanzas">';
+            echo '<Table>';
+            echo '<Row>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Código</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Empleado</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Días de tardanza</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Minutos acumulados</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Días de descuento</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Minutos (si no llega a 3)</Data></Cell>'
+                . '</Row>';
+            echo implode('', $xmlRowsSummary);
+            echo '</Table>';
+            echo '</Worksheet>';
+
+            echo '</Workbook>';
+            exit;
         }
     }
 }

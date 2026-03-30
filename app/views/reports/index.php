@@ -28,7 +28,7 @@
             <div class="col-md-7">
                 <div class="card shadow border-0">
                     <div class="card-header bg-success text-white py-3">
-                        <h5 class="m-0"><i class="bi bi-file-earmark-excel"></i> Exportar a Excel (.csv)</h5>
+                        <h5 class="m-0"><i class="bi bi-file-earmark-excel"></i> Exportar a Excel (.xls)</h5>
                     </div>
                     <div class="card-body p-4">
                         <p class="text-muted mb-4">Selecciona el rango de fechas para descargar el historial de asistencia completo.</p>
@@ -54,7 +54,7 @@
             <div class="col-md-5">
                 <div class="alert alert-info shadow-sm border-0">
                     <h5 class="alert-heading"><i class="bi bi-info-circle-fill"></i> Información</h5>
-                    <p>El archivo descargado es en formato <strong>CSV (Valores Separados por Comas)</strong>.</p>
+                    <p>El archivo descargado es en formato <strong>Excel (.xls)</strong> con pestañas y formato de colores.</p>
                     <hr>
                     <p class="mb-0 small">Puedes abrirlo directamente con:</p>
                     <ul class="small mt-2">

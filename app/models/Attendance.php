@@ -2,9 +2,26 @@
 class Attendance {
     private $conn;
     private $table = "attendance_logs";
+    private $hasBreakfastReturnColumn;
 
     public function __construct($db) {
         $this->conn = $db;
+        $this->hasBreakfastReturnColumn = null;
+    }
+
+    private function hasBreakfastReturnColumn() {
+        if ($this->hasBreakfastReturnColumn !== null) {
+            return $this->hasBreakfastReturnColumn;
+        }
+
+        $stmt = $this->conn->prepare("SHOW COLUMNS FROM " . $this->table . " LIKE 'breakfast_return_time'");
+        $stmt->execute();
+        $this->hasBreakfastReturnColumn = (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+        return $this->hasBreakfastReturnColumn;
+    }
+
+    private function breakfastReturnSelect() {
+        return $this->hasBreakfastReturnColumn() ? "a.breakfast_return_time" : "NULL AS breakfast_return_time";
     }
 
     // 1. OBTENER LOS ÚLTIMOS 10 REGISTROS (Para tabla de recientes)
@@ -32,7 +49,7 @@ class Attendance {
 
     // 3. OBTENER HISTORIAL POR RANGO DE FECHAS (Para Reporte Excel)
     public function getHistoryByDate($start, $end) {
-        $query = "SELECT a.date_log, a.check_in_time, a.breakfast_time, a.lunch_out_time, a.lunch_return_time, a.check_out_time, a.total_hours, a.status,
+        $query = "SELECT a.date_log, a.check_in_time, a.breakfast_time, " . $this->breakfastReturnSelect() . ", a.lunch_out_time, a.lunch_return_time, a.check_out_time, a.total_hours, a.status,
                          e.first_name, e.last_name, e.employee_code, d.name as department, s.entry_time as schedule_entry_time
                   FROM " . $this->table . " a
                   INNER JOIN employees e ON a.employee_id = e.id
@@ -63,7 +80,7 @@ class Attendance {
 
     // 5. HISTORIAL CON FILTROS (Para Pantalla Historial)
     public function getLogsWithFilters($employee_id, $start, $end) {
-        $query = "SELECT a.date_log, a.check_in_time, a.breakfast_time, a.lunch_out_time, a.lunch_return_time, a.check_out_time, a.total_hours, a.status,
+        $query = "SELECT a.date_log, a.check_in_time, a.breakfast_time, " . $this->breakfastReturnSelect() . ", a.lunch_out_time, a.lunch_return_time, a.check_out_time, a.total_hours, a.status,
                          e.first_name, e.last_name, e.employee_code, d.name as department, s.entry_time as schedule_entry_time
                   FROM " . $this->table . " a
                   INNER JOIN employees e ON a.employee_id = e.id

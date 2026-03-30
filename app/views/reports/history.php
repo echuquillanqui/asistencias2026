@@ -76,7 +76,8 @@
                                 <th>Departamento</th>
                                 <th>Fecha</th>
                                 <th>Entrada</th>
-                                <th>Desayuno</th>
+                                <th>Salida Desayuno</th>
+                                <th>Retorno Desayuno</th>
                                 <th>Salida Almuerzo</th>
                                 <th>Retorno Almuerzo</th>
                                 <th>Salida</th>
@@ -127,6 +128,13 @@
                                             <span class="text-muted">--</span>
                                         <?php endif; ?>
                                     </td>
+                                    <td class="text-secondary fw-bold">
+                                        <?php if(!empty($log['breakfast_return_time'])): ?>
+                                            <?php echo date('H:i:s', strtotime($log['breakfast_return_time'])); ?>
+                                        <?php else: ?>
+                                            <span class="text-muted">--</span>
+                                        <?php endif; ?>
+                                    </td>
 
                                     <td class="text-secondary fw-bold">
                                         <?php if($log['lunch_out_time']): ?>
@@ -167,7 +175,7 @@
                                 </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan="9" class="text-center p-5 text-muted">No se encontraron registros.</td></tr>
+                                <tr><td colspan="10" class="text-center p-5 text-muted">No se encontraron registros.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

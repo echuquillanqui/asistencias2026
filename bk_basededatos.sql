@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS `attendance_logs` (
   `date_log` date NOT NULL,
   `check_in_time` time DEFAULT NULL,
   `breakfast_time` time DEFAULT NULL,
+  `breakfast_return_time` time DEFAULT NULL,
   `lunch_out_time` time DEFAULT NULL,
   `lunch_return_time` time DEFAULT NULL,
   `check_out_time` time DEFAULT NULL,
@@ -39,10 +40,10 @@ CREATE TABLE IF NOT EXISTS `attendance_logs` (
 
 -- Volcando datos para la tabla control_acceso_db.attendance_logs: ~2 rows (aproximadamente)
 DELETE FROM `attendance_logs`;
-INSERT INTO `attendance_logs` (`id`, `employee_id`, `date_log`, `check_in_time`, `breakfast_time`, `lunch_out_time`, `lunch_return_time`, `check_out_time`, `source_ip`, `total_hours`, `status`) VALUES
-	(1, 2, '2025-11-21', '08:05:00', '09:30:00', '13:00:00', '14:00:00', '18:00:00', '192.168.1.10', 8.92, 'tarde'),
-	(2, 3, '2025-11-21', '07:55:00', '09:35:00', '13:00:00', '14:05:00', '18:10:00', '192.168.1.10', 9.17, 'a_tiempo'),
-	(3, 1, '2025-11-23', '08:02:00', '09:45:00', NULL, NULL, NULL, '192.168.1.11', NULL, 'tarde');
+INSERT INTO `attendance_logs` (`id`, `employee_id`, `date_log`, `check_in_time`, `breakfast_time`, `breakfast_return_time`, `lunch_out_time`, `lunch_return_time`, `check_out_time`, `source_ip`, `total_hours`, `status`) VALUES
+	(1, 2, '2025-11-21', '08:05:00', '09:30:00', '09:45:00', '13:00:00', '14:00:00', '18:00:00', '192.168.1.10', 8.92, 'tarde'),
+	(2, 3, '2025-11-21', '07:55:00', '09:35:00', '09:50:00', '13:00:00', '14:05:00', '18:10:00', '192.168.1.10', 9.17, 'a_tiempo'),
+	(3, 1, '2025-11-23', '08:02:00', NULL, NULL, NULL, NULL, NULL, '192.168.1.11', NULL, 'tarde');
 
 -- Volcando estructura para tabla control_acceso_db.departments
 CREATE TABLE IF NOT EXISTS `departments` (

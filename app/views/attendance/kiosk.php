@@ -74,6 +74,17 @@
                         <div id="reader" class="mb-3 shadow-sm"></div>
                         
                         <form action="?c=Attendance&a=register" method="POST" id="attendanceForm">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted small">TIPO DE MARCACIÓN</label>
+                                <select name="action_type" class="form-select">
+                                    <option value="auto">Automático (secuencia)</option>
+                                    <option value="breakfast_out">Salida a desayuno</option>
+                                    <option value="breakfast_return">Retorno de desayuno</option>
+                                    <option value="lunch_out">Salida a almuerzo</option>
+                                    <option value="lunch_return">Retorno de almuerzo</option>
+                                    <option value="check_out">Salida final</option>
+                                </select>
+                            </div>
                             <div class="form-floating mb-3">
                                 <input type="text" name="employee_code" id="employee_code" 
                                        class="form-control text-center fw-bold fs-4" 
@@ -85,7 +96,7 @@
                             </button>
                         </form>
                         <p class="text-center text-muted small mt-3 mb-0">
-                            <i class="bi bi-info-circle"></i> Secuencia: Entrada → Desayuno → Salida Almuerzo → Retorno Almuerzo → Salida
+                            <i class="bi bi-info-circle"></i> Secuencia: Entrada → Salida desayuno → Retorno desayuno → Salida almuerzo → Retorno almuerzo → Salida (desayuno opcional)
                         </p>
                     </div>
 
