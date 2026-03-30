@@ -76,6 +76,9 @@
                                 <th>Departamento</th>
                                 <th>Fecha</th>
                                 <th>Entrada</th>
+                                <th>Desayuno</th>
+                                <th>Salida Almuerzo</th>
+                                <th>Retorno Almuerzo</th>
                                 <th>Salida</th>
                                 <th>Tiempo Trabajado</th>
                             </tr>
@@ -114,6 +117,30 @@
                                     </td>
                                     
                                     <td class="text-secondary fw-bold">
+                                        <?php if($log['breakfast_time']): ?>
+                                            <?php echo date('H:i:s', strtotime($log['breakfast_time'])); ?>
+                                        <?php else: ?>
+                                            <span class="text-muted">--</span>
+                                        <?php endif; ?>
+                                    </td>
+
+                                    <td class="text-secondary fw-bold">
+                                        <?php if($log['lunch_out_time']): ?>
+                                            <?php echo date('H:i:s', strtotime($log['lunch_out_time'])); ?>
+                                        <?php else: ?>
+                                            <span class="text-muted">--</span>
+                                        <?php endif; ?>
+                                    </td>
+
+                                    <td class="text-secondary fw-bold">
+                                        <?php if($log['lunch_return_time']): ?>
+                                            <?php echo date('H:i:s', strtotime($log['lunch_return_time'])); ?>
+                                        <?php else: ?>
+                                            <span class="text-muted">--</span>
+                                        <?php endif; ?>
+                                    </td>
+
+                                    <td class="text-secondary fw-bold">
                                         <?php if($log['check_out_time']): ?>
                                             <?php echo date('H:i:s', strtotime($log['check_out_time'])); ?>
                                         <?php else: ?>
@@ -124,10 +151,10 @@
                                     <td>
                                         <?php 
                                             if($log['check_out_time']) {
-                                                $in = new DateTime($log['check_in_time']);
-                                                $out = new DateTime($log['check_out_time']);
-                                                $diff = $in->diff($out);
-                                                echo '<span class="badge bg-info text-dark fs-6">' . $diff->format('%H h %I m') . '</span>';
+                                                $totalHours = isset($log['total_hours']) ? (float)$log['total_hours'] : 0;
+                                                $hours = floor($totalHours);
+                                                $minutes = round(($totalHours - $hours) * 60);
+                                                echo '<span class="badge bg-info text-dark fs-6">' . sprintf('%02d h %02d m', $hours, $minutes) . '</span>';
                                             } else {
                                                 echo "--";
                                             }
@@ -136,7 +163,7 @@
                                 </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan="6" class="text-center p-5 text-muted">No se encontraron registros.</td></tr>
+                                <tr><td colspan="9" class="text-center p-5 text-muted">No se encontraron registros.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

@@ -9,6 +9,13 @@ class ReportController {
     private $employeeModel;
     private $settingModel; // 2. VARIABLE NUEVA
     private $db;
+    
+    private function getFirstScheduleTime($scheduleValue, $fallback = '08:00:00') {
+        $parts = array_filter(array_map('trim', explode(',', (string)$scheduleValue)));
+        if (empty($parts)) return $fallback;
+        $time = $parts[0];
+        return strlen($time) === 5 ? ($time . ':00') : $time;
+    }
 
     public function __construct() {
         if (session_status() == PHP_SESSION_NONE) session_start();
@@ -40,8 +47,8 @@ class ReportController {
         $logs = $this->attendanceModel->getLogsWithFilters($employee_id, $start_date, $end_date);
         
         // 4. OBTENER LA HORA REAL DE LA BASE DE DATOS
-        $horaEntradaOficial = $this->settingModel->get('entry_time');
-        if (!$horaEntradaOficial) $horaEntradaOficial = '08:00:00'; // Fallback por seguridad
+        $entrySchedule = $this->settingModel->get('entry_time');
+        $horaEntradaOficial = $this->getFirstScheduleTime($entrySchedule, '08:00:00');
 
         require_once '../app/views/reports/history.php';
     }
@@ -51,8 +58,7 @@ class ReportController {
             $start = $_POST['start_date']; $end = $_POST['end_date'];
             
             // OBTENER HORA DE LA BD TAMBIÉN PARA EL EXCEL
-            $horaLimite = $this->settingModel->get('entry_time');
-            if (!$horaLimite) $horaLimite = '08:00:00';
+            $horaLimite = $this->getFirstScheduleTime($this->settingModel->get('entry_time'), '08:00:00');
 
             $data = $this->attendanceModel->getHistoryByDate($start, $end);
             
@@ -62,22 +68,34 @@ class ReportController {
             $output = fopen('php://output', 'w');
             fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
             
-            fputcsv($output, ['Codigo', 'Empleado', 'Depto', 'Fecha', 'Entrada', 'Salida', 'Horas', 'Estado', 'Puntualidad']);
+            fputcsv($output, ['Codigo', 'Empleado', 'Depto', 'Fecha', 'Entrada', 'Desayuno', 'Salida Almuerzo', 'Retorno Almuerzo', 'Salida', 'Horas', 'Estado', 'Puntualidad']);
             
             foreach ($data as $row) {
                 $horas = "--"; 
                 $puntual = "Puntual";
                 
                 if ($row['check_out_time']) {
-                    $diff = (new DateTime($row['check_in_time']))->diff(new DateTime($row['check_out_time']));
-                    $horas = $diff->format('%H:%I:%S');
+                    $horas = number_format((float)($row['total_hours'] ?? 0), 2);
                 }
                 
                 // USAR LA VARIABLE DE LA BD PARA CALCULAR
                 if ($row['check_in_time'] > $horaLimite) $puntual = "TARDE";
                 
                 $est = ($row['check_out_time']) ? 'Completado' : 'En Turno';
-                fputcsv($output, [$row['employee_code'], $row['first_name'].' '.$row['last_name'], $row['department'], $row['date_log'], $row['check_in_time'], $row['check_out_time'], $horas, $est, $puntual]);
+                fputcsv($output, [
+                    $row['employee_code'],
+                    $row['first_name'].' '.$row['last_name'],
+                    $row['department'],
+                    $row['date_log'],
+                    $row['check_in_time'],
+                    $row['breakfast_time'],
+                    $row['lunch_out_time'],
+                    $row['lunch_return_time'],
+                    $row['check_out_time'],
+                    $horas,
+                    $est,
+                    $puntual
+                ]);
             }
             fclose($output); exit;
         }

@@ -81,11 +81,11 @@
                                 <label>Código QR (Ej: EMP001)</label>
                             </div>
                             <button type="submit" class="btn btn-primary w-100 btn-lg py-3 fw-bold shadow">
-                                Registrar Asistencia
+                                Registrar Marcación
                             </button>
                         </form>
                         <p class="text-center text-muted small mt-3 mb-0">
-                            <i class="bi bi-info-circle"></i> Enfoca el código con la cámara
+                            <i class="bi bi-info-circle"></i> Secuencia: Entrada → Desayuno → Salida Almuerzo → Retorno Almuerzo → Salida
                         </p>
                     </div>
 

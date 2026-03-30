@@ -71,7 +71,13 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Sede</label>
-                            <input type="text" name="site_name" class="form-control" required value="<?php echo htmlspecialchars($emp['site_name'] ?? ''); ?>">
+                            <select name="site_name" class="form-select text-uppercase" required>
+                                <?php foreach($availableSites as $site): ?>
+                                    <option value="<?php echo $site; ?>" <?php echo (($emp['site_name'] ?? '') === $site) ? 'selected' : ''; ?>>
+                                        <?php echo $site; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
 

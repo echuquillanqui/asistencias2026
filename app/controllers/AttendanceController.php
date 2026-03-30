@@ -4,6 +4,43 @@ require_once '../app/models/Employee.php';
 // require_once '../app/models/Attendance.php';
 
 class AttendanceController {
+    private function getSettingValue($db, $settingName, $fallback = '') {
+        $query = "SELECT setting_value FROM settings WHERE setting_name = :settingName LIMIT 1";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':settingName', $settingName);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row && !empty($row['setting_value']) ? $row['setting_value'] : $fallback;
+    }
+
+    private function getFirstScheduleTime($scheduleValue, $fallback = '08:00:00') {
+        $parts = array_filter(array_map('trim', explode(',', (string)$scheduleValue)));
+        if (empty($parts)) {
+            return $fallback;
+        }
+        $time = $parts[0];
+        return strlen($time) === 5 ? ($time . ':00') : $time;
+    }
+
+    private function calculateTotalHours($checkIn, $checkOut, $lunchOut, $lunchReturn) {
+        $workSeconds = strtotime($checkOut) - strtotime($checkIn);
+        if ($workSeconds < 0) {
+            return null;
+        }
+
+        if (!empty($lunchOut) && !empty($lunchReturn)) {
+            $lunchSeconds = strtotime($lunchReturn) - strtotime($lunchOut);
+            if ($lunchSeconds > 0) {
+                $workSeconds -= $lunchSeconds;
+            }
+        }
+
+        if ($workSeconds < 0) {
+            $workSeconds = 0;
+        }
+        return round($workSeconds / 3600, 2);
+    }
+
     private function getClientIp() {
         if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
             $forwarded = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
@@ -65,7 +102,7 @@ class AttendanceController {
                     $horaActual = date('H:i:s');
 
                     // B. Verificar si ya tiene registro HOY
-                    $queryCheck = "SELECT id, check_out_time FROM attendance_logs 
+                    $queryCheck = "SELECT id, check_in_time, breakfast_time, lunch_out_time, lunch_return_time, check_out_time FROM attendance_logs 
                                    WHERE employee_id = :empId AND date_log = :fechaHoy";
                     $stmtCheck = $db->prepare($queryCheck);
                     $stmtCheck->bindParam(':empId', $empId);
@@ -75,13 +112,18 @@ class AttendanceController {
 
                     if (!$registroHoy) {
                         // CASO 1: No existe registro hoy -> ES UNA ENTRADA
-                        $insert = "INSERT INTO attendance_logs (employee_id, date_log, check_in_time, source_ip) 
-                                   VALUES (:empId, :fechaHoy, :horaActual, :sourceIp)";
+                        $entrySchedule = $this->getSettingValue($db, 'entry_time', '08:00');
+                        $entryLimit = $this->getFirstScheduleTime($entrySchedule, '08:00:00');
+                        $status = (strtotime($horaActual) > strtotime($entryLimit)) ? 'tarde' : 'a_tiempo';
+
+                        $insert = "INSERT INTO attendance_logs (employee_id, date_log, check_in_time, source_ip, status) 
+                                   VALUES (:empId, :fechaHoy, :horaActual, :sourceIp, :status)";
                         $stmtInsert = $db->prepare($insert);
                         $stmtInsert->bindParam(':empId', $empId);
                         $stmtInsert->bindParam(':fechaHoy', $fechaHoy);
                         $stmtInsert->bindParam(':horaActual', $horaActual);
                         $stmtInsert->bindParam(':sourceIp', $currentIp);
+                        $stmtInsert->bindParam(':status', $status);
                         
                         if($stmtInsert->execute()) {
                             $message = "¡Buenos días " . $empleado['first_name'] . "! Entrada registrada.";
@@ -91,22 +133,62 @@ class AttendanceController {
 
                     } else {
                         // CASO 2: Ya existe registro hoy
-                        if ($registroHoy['check_out_time'] == NULL) {
-                            // Tiene entrada pero no salida -> ES UNA SALIDA
-                            $update = "UPDATE attendance_logs SET check_out_time = :horaActual 
-                                       WHERE id = :logId";
+                        if ($registroHoy['breakfast_time'] == NULL) {
+                            $update = "UPDATE attendance_logs SET breakfast_time = :horaActual WHERE id = :logId";
                             $stmtUpdate = $db->prepare($update);
                             $stmtUpdate->bindParam(':horaActual', $horaActual);
                             $stmtUpdate->bindParam(':logId', $registroHoy['id']);
+
+                            if($stmtUpdate->execute()) {
+                                $message = "Desayuno registrado para " . $empleado['first_name'] . ".";
+                            } else {
+                                $error = "Error al registrar desayuno.";
+                            }
+                        } elseif ($registroHoy['lunch_out_time'] == NULL) {
+                            $update = "UPDATE attendance_logs SET lunch_out_time = :horaActual WHERE id = :logId";
+                            $stmtUpdate = $db->prepare($update);
+                            $stmtUpdate->bindParam(':horaActual', $horaActual);
+                            $stmtUpdate->bindParam(':logId', $registroHoy['id']);
+
+                            if($stmtUpdate->execute()) {
+                                $message = "Salida a almuerzo registrada para " . $empleado['first_name'] . ".";
+                            } else {
+                                $error = "Error al registrar salida a almuerzo.";
+                            }
+                        } elseif ($registroHoy['lunch_return_time'] == NULL) {
+                            $update = "UPDATE attendance_logs SET lunch_return_time = :horaActual WHERE id = :logId";
+                            $stmtUpdate = $db->prepare($update);
+                            $stmtUpdate->bindParam(':horaActual', $horaActual);
+                            $stmtUpdate->bindParam(':logId', $registroHoy['id']);
+
+                            if($stmtUpdate->execute()) {
+                                $message = "Retorno de almuerzo registrado para " . $empleado['first_name'] . ".";
+                            } else {
+                                $error = "Error al registrar retorno de almuerzo.";
+                            }
+                        } elseif ($registroHoy['check_out_time'] == NULL) {
+                            $totalHours = $this->calculateTotalHours(
+                                $registroHoy['check_in_time'],
+                                $horaActual,
+                                $registroHoy['lunch_out_time'],
+                                $registroHoy['lunch_return_time']
+                            );
+
+                            $update = "UPDATE attendance_logs 
+                                       SET check_out_time = :horaActual, total_hours = :totalHours
+                                       WHERE id = :logId";
+                            $stmtUpdate = $db->prepare($update);
+                            $stmtUpdate->bindParam(':horaActual', $horaActual);
+                            $stmtUpdate->bindParam(':totalHours', $totalHours);
+                            $stmtUpdate->bindParam(':logId', $registroHoy['id']);
                             
                             if($stmtUpdate->execute()) {
-                                $message = "¡Hasta mañana " . $empleado['first_name'] . "! Salida registrada.";
+                                $message = "¡Hasta mañana " . $empleado['first_name'] . "! Salida final registrada.";
                             } else {
-                                $error = "Error al registrar la salida.";
+                                $error = "Error al registrar la salida final.";
                             }
                         } else {
-                            // Ya marcó entrada y salida hoy
-                            $error = "Ya has registrado tu salida hoy. No puedes marcar de nuevo.";
+                            $error = "Ya completaste todas las marcaciones de hoy.";
                         }
                     }
                 } else {

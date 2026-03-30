@@ -56,7 +56,14 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Sede</label>
-                                <input type="text" name="site_name" class="form-control" required placeholder="Ej: Sede Norte">
+                                <select name="site_name" class="form-select text-uppercase" required>
+                                    <option value="">-- Seleccionar sede --</option>
+                                    <option value="HUANCAYO">HUANCAYO</option>
+                                    <option value="LIMA">LIMA</option>
+                                    <option value="PASCO">PASCO</option>
+                                    <option value="SAN RAMON">SAN RAMON</option>
+                                    <option value="HUANCAVELICA">HUANCAVELICA</option>
+                                </select>
                             </div>
                         </div>
 

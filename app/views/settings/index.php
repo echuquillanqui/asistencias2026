@@ -36,10 +36,34 @@
                 <form action="?c=Setting&a=update" method="POST">
                     
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Hora de Entrada Oficial</label>
-                        <p class="text-muted small">Las marcas posteriores a esta hora se considerarán "Tardanzas".</p>
-                        <input type="time" name="entry_time" class="form-control form-control-lg text-center fw-bold" 
-                               value="<?php echo $entry_time; ?>" required>
+                        <label class="form-label fw-bold">Horarios de Entrada</label>
+                        <p class="text-muted small">Puede colocar más de un horario separado por coma. Ej: 08:00,09:00</p>
+                        <input type="text" name="entry_time" class="form-control form-control-lg text-center fw-bold" 
+                               value="<?php echo htmlspecialchars($entry_time ?? '08:00'); ?>" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Horarios de Desayuno</label>
+                        <input type="text" name="breakfast_time" class="form-control form-control-lg text-center fw-bold" 
+                               value="<?php echo htmlspecialchars($breakfast_time ?? '09:30'); ?>" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Horarios de Salida a Almuerzo</label>
+                        <input type="text" name="lunch_out_time" class="form-control form-control-lg text-center fw-bold" 
+                               value="<?php echo htmlspecialchars($lunch_out_time ?? '13:00'); ?>" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Horarios de Retorno de Almuerzo</label>
+                        <input type="text" name="lunch_return_time" class="form-control form-control-lg text-center fw-bold" 
+                               value="<?php echo htmlspecialchars($lunch_return_time ?? '14:00'); ?>" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Horarios de Salida</label>
+                        <input type="text" name="check_out_time" class="form-control form-control-lg text-center fw-bold" 
+                               value="<?php echo htmlspecialchars($check_out_time ?? '18:00'); ?>" required>
                     </div>
 
                     <hr>

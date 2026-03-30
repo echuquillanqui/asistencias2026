@@ -5,6 +5,7 @@ require_once '../app/models/Employee.php';
 class EmployeeController {
     private $employeeModel;
     private $db;
+    private $availableSites = ['HUANCAYO', 'LIMA', 'PASCO', 'SAN RAMON', 'HUANCAVELICA'];
 
     public function __construct() {
         if (session_status() == PHP_SESSION_NONE) session_start();
@@ -38,12 +39,19 @@ class EmployeeController {
         $stmt = $this->db->query("SELECT * FROM departments WHERE status = 'activo'");
         $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
+        $availableSites = $this->availableSites;
         require_once '../app/views/employees/index.php';
     }
 
     // 2. GUARDAR NUEVO EMPLEADO (Desde el Modal)
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $siteName = strtoupper(trim($_POST['site_name'] ?? ''));
+            if (!in_array($siteName, $this->availableSites, true)) {
+                header("Location: ?c=Employee&err=sede_invalida");
+                exit;
+            }
+
             $data = [
                 'employee_code' => $_POST['employee_code'],
                 'first_name' => $_POST['first_name'],
@@ -51,7 +59,7 @@ class EmployeeController {
                 'email' => $_POST['email'],
                 'department_id' => $_POST['department_id'],
                 'position' => $_POST['position'],
-                'site_name' => $_POST['site_name']
+                'site_name' => $siteName
             ];
             
             // El modelo se encarga de asignar la contraseña por defecto '123456'
@@ -74,6 +82,7 @@ class EmployeeController {
             $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             if ($emp) {
+                $availableSites = $this->availableSites;
                 require_once '../app/views/employees/edit.php';
             } else {
                 header("Location: ?c=Employee");
@@ -84,6 +93,12 @@ class EmployeeController {
     // 4. GUARDAR CAMBIOS DE EDICIÓN
     public function update_data() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $siteName = strtoupper(trim($_POST['site_name'] ?? ''));
+            if (!in_array($siteName, $this->availableSites, true)) {
+                header("Location: ?c=Employee&err=sede_invalida");
+                exit;
+            }
+
             $data = [
                 'id' => $_POST['id'],
                 'employee_code' => $_POST['employee_code'],
@@ -92,7 +107,7 @@ class EmployeeController {
                 'email' => $_POST['email'],
                 'department_id' => $_POST['department_id'],
                 'position' => $_POST['position'],
-                'site_name' => $_POST['site_name']
+                'site_name' => $siteName
             ];
             $this->employeeModel->update($data);
             header("Location: ?c=Employee&msg=actualizado");

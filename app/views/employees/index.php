@@ -58,6 +58,12 @@
                 Operación realizada con éxito. <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
+        <?php if(isset($_GET['err']) && $_GET['err'] === 'sede_invalida'): ?>
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm">
+                Sede inválida. Solo se permiten: HUANCAYO, LIMA, PASCO, SAN RAMON, HUANCAVELICA.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
 
         <div class="card shadow-sm border-0">
             <div class="card-body p-0">
@@ -149,7 +155,12 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Sede</label>
-                    <input type="text" name="site_name" class="form-control" required placeholder="Ej: Sede Central">
+                    <select name="site_name" class="form-select text-uppercase" required>
+                        <option value="">-- Seleccionar sede --</option>
+                        <?php foreach($availableSites as $site): ?>
+                            <option value="<?php echo $site; ?>"><?php echo $site; ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
                 
                 <div class="col-12 mt-4">

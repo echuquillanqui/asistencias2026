@@ -19,7 +19,9 @@ class Setting {
 
     // Guardar un valor
     public function set($name, $value) {
-        $query = "UPDATE " . $this->table . " SET setting_value = :val WHERE setting_name = :name";
+        $query = "INSERT INTO " . $this->table . " (setting_name, setting_value)
+                  VALUES (:name, :val)
+                  ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':val', $value);
         $stmt->bindParam(':name', $name);
