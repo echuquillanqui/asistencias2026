@@ -101,7 +101,7 @@ class AttendanceController {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$this->ipIsAllowed($db, $currentIp)) {
-                $error = "Marcación bloqueada: este dispositivo/red no pertenece a una sede autorizada.";
+                $error = "Marcación bloqueada: este dispositivo/red no pertenece a una sede autorizada. IP detectada: {$currentIp}";
                 require_once '../app/views/attendance/kiosk.php';
                 return;
             }
