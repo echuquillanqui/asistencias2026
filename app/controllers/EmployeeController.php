@@ -10,13 +10,11 @@ class EmployeeController {
     public function __construct() {
         if (session_status() == PHP_SESSION_NONE) session_start();
         
-        // 1. Verificar Login
         if (!isset($_SESSION['user_id'])) {
             header("Location: ?c=Auth&a=login");
             exit;
         }
         
-        // 2. Bloqueo de Rol (Solo Admin)
         if ($_SESSION['role'] != 'admin') {
             header("Location: ?c=Dashboard");
             exit;
@@ -27,23 +25,30 @@ class EmployeeController {
         $this->employeeModel = new Employee($this->db);
     }
 
-    // 1. LISTAR EMPLEADOS (Y CARGAR DATOS PARA EL MODAL)
+    private function normalizeScheduleId($scheduleId) {
+        if (empty($scheduleId)) {
+            return null;
+        }
+
+        $stmt = $this->db->prepare("SELECT id FROM schedules WHERE id = :id LIMIT 1");
+        $stmt->bindParam(':id', $scheduleId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetch(PDO::FETCH_ASSOC) ? (int)$scheduleId : null;
+    }
+
     public function index() {
-        // Capturar búsqueda
         $search = isset($_GET['q']) ? $_GET['q'] : "";
-        
-        // A. Obtener lista de empleados
         $employees = $this->employeeModel->read($search);
         
-        // B. Obtener departamentos (Necesario para el Modal de Crear)
         $stmt = $this->db->query("SELECT * FROM departments WHERE status = 'activo'");
         $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
+        $schedules = $this->employeeModel->getSchedules();
         $availableSites = $this->availableSites;
         require_once '../app/views/employees/index.php';
     }
 
-    // 2. GUARDAR NUEVO EMPLEADO (Desde el Modal)
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $siteName = strtoupper(trim($_POST['site_name'] ?? ''));
@@ -59,27 +64,24 @@ class EmployeeController {
                 'email' => $_POST['email'],
                 'department_id' => $_POST['department_id'],
                 'position' => $_POST['position'],
-                'site_name' => $siteName
+                'site_name' => $siteName,
+                'schedule_id' => $this->normalizeScheduleId($_POST['schedule_id'] ?? null)
             ];
             
-            // El modelo se encarga de asignar la contraseña por defecto '123456'
             if ($this->employeeModel->create($data)) {
                 header("Location: ?c=Employee&msg=guardado");
             } else {
-                // Manejo básico de error (opcional)
                 header("Location: ?c=Employee&err=error");
             }
         }
     }
 
-    // 3. MOSTRAR FORMULARIO DE EDICIÓN (Página aparte)
     public function edit() {
         if (isset($_GET['id'])) {
             $emp = $this->employeeModel->getById($_GET['id']);
-            
-            // También necesitamos departamentos aquí para el select
             $stmt = $this->db->query("SELECT * FROM departments WHERE status = 'activo'");
             $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $schedules = $this->employeeModel->getSchedules();
 
             if ($emp) {
                 $availableSites = $this->availableSites;
@@ -90,7 +92,6 @@ class EmployeeController {
         }
     }
 
-    // 4. GUARDAR CAMBIOS DE EDICIÓN
     public function update_data() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $siteName = strtoupper(trim($_POST['site_name'] ?? ''));
@@ -107,20 +108,86 @@ class EmployeeController {
                 'email' => $_POST['email'],
                 'department_id' => $_POST['department_id'],
                 'position' => $_POST['position'],
-                'site_name' => $siteName
+                'site_name' => $siteName,
+                'schedule_id' => $this->normalizeScheduleId($_POST['schedule_id'] ?? null)
             ];
             $this->employeeModel->update($data);
             header("Location: ?c=Employee&msg=actualizado");
         }
     }
 
-    // 5. ACTIVAR / DESACTIVAR
+    public function create_schedule() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: ?c=Employee");
+            exit;
+        }
+
+        $name = strtoupper(trim($_POST['schedule_name'] ?? ''));
+        if ($name === '') {
+            header("Location: ?c=Employee&err=horario_invalido");
+            exit;
+        }
+
+        $data = [
+            'name' => $name,
+            'entry_time' => strtoupper(trim($_POST['entry_time'] ?? '08:00')),
+            'breakfast_time' => strtoupper(trim($_POST['breakfast_time'] ?? '09:30')),
+            'lunch_out_time' => strtoupper(trim($_POST['lunch_out_time'] ?? '13:00')),
+            'lunch_return_time' => strtoupper(trim($_POST['lunch_return_time'] ?? '14:00')),
+            'check_out_time' => strtoupper(trim($_POST['check_out_time'] ?? '18:00')),
+        ];
+
+        if ($this->employeeModel->createSchedule($data)) {
+            header("Location: ?c=Employee&msg=horario_creado");
+        } else {
+            header("Location: ?c=Employee&err=horario_duplicado");
+        }
+    }
+
+    public function assign_schedule() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: ?c=Employee");
+            exit;
+        }
+
+        $scheduleId = $this->normalizeScheduleId($_POST['schedule_id'] ?? null);
+        if (!$scheduleId) {
+            header("Location: ?c=Employee&err=horario_invalido");
+            exit;
+        }
+
+        $mode = $_POST['assign_mode'] ?? 'individual';
+        $ok = false;
+
+        if ($mode === 'department') {
+            $departmentId = (int)($_POST['department_id'] ?? 0);
+            if ($departmentId > 0) {
+                $ok = $this->employeeModel->assignScheduleByDepartment($scheduleId, $departmentId);
+            }
+        } elseif ($mode === 'site') {
+            $siteName = strtoupper(trim($_POST['site_name'] ?? ''));
+            if (in_array($siteName, $this->availableSites, true)) {
+                $ok = $this->employeeModel->assignScheduleBySite($scheduleId, $siteName);
+            }
+        } else {
+            $employeeIds = array_map('intval', $_POST['employee_ids'] ?? []);
+            $employeeIds = array_values(array_filter($employeeIds));
+            if (!empty($employeeIds)) {
+                $ok = $this->employeeModel->assignScheduleToEmployees($scheduleId, $employeeIds);
+            }
+        }
+
+        if ($ok) {
+            header("Location: ?c=Employee&msg=horario_asignado");
+        } else {
+            header("Location: ?c=Employee&err=asignacion_invalida");
+        }
+    }
+
     public function toggle() {
         if (isset($_GET['id']) && isset($_GET['status'])) {
             $id = $_GET['id'];
             $currentStatus = $_GET['status'];
-            
-            // Invertir estado
             $newStatus = ($currentStatus == 'activo') ? 'inactivo' : 'activo';
             
             $this->employeeModel->toggleStatus($id, $newStatus);
@@ -128,7 +195,6 @@ class EmployeeController {
         }
     }
 
-    // 6. ELIMINAR (Opcional, ya que usamos desactivar)
     public function delete() {
         if(isset($_GET['id'])) {
             $this->employeeModel->delete($_GET['id']);

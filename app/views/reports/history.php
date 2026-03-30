@@ -88,11 +88,15 @@
                                 <?php foreach($logs as $log): ?>
                                 
                                 <?php 
-                                    $esTarde = false;
-                                    // Usamos la hora oficial pasada desde el controlador
-                                    if(strtotime($log['check_in_time']) > strtotime($horaEntradaOficial)) {
-                                        $esTarde = true;
+                                    $limiteEmpleado = $horaEntradaOficial;
+                                    if (!empty($log['schedule_entry_time'])) {
+                                        $parts = array_filter(array_map('trim', explode(',', (string)$log['schedule_entry_time'])));
+                                        if (!empty($parts)) {
+                                            $limiteEmpleado = strlen($parts[0]) === 5 ? ($parts[0] . ':00') : $parts[0];
+                                        }
                                     }
+
+                                    $esTarde = strtotime($log['check_in_time']) > strtotime($limiteEmpleado);
                                 ?>
 
                                 <tr>

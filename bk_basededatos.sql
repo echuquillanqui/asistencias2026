@@ -62,6 +62,25 @@ INSERT INTO `departments` (`id`, `name`, `status`) VALUES
 	(5, 'SISTEMA', 'activo'),
 	(6, 'PRODUCCIÓN', 'activo');
 
+-- Volcando estructura para tabla control_acceso_db.schedules
+CREATE TABLE IF NOT EXISTS `schedules` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `entry_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `breakfast_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `lunch_out_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `lunch_return_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `check_out_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Volcando datos para la tabla control_acceso_db.schedules: ~1 rows (aproximadamente)
+DELETE FROM `schedules`;
+INSERT INTO `schedules` (`id`, `name`, `entry_time`, `breakfast_time`, `lunch_out_time`, `lunch_return_time`, `check_out_time`, `created_at`) VALUES
+	(1, 'HORARIO GENERAL', '08:00', '09:30', '13:00', '14:00', '18:00', '2025-11-21 09:00:00');
+
 -- Volcando estructura para tabla control_acceso_db.employees
 CREATE TABLE IF NOT EXISTS `employees` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -71,6 +90,7 @@ CREATE TABLE IF NOT EXISTS `employees` (
   `email` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `password` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `department_id` int DEFAULT NULL,
+  `schedule_id` int DEFAULT NULL,
   `position` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `site_name` varchar(120) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `photo_path` varchar(255) COLLATE utf8mb4_general_ci DEFAULT 'default.png',
@@ -79,15 +99,17 @@ CREATE TABLE IF NOT EXISTS `employees` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `employee_code` (`employee_code`),
   KEY `department_id` (`department_id`),
-  CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`)
+  KEY `schedule_id` (`schedule_id`),
+  CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
+  CONSTRAINT `employees_ibfk_2` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Volcando datos para la tabla control_acceso_db.employees: ~2 rows (aproximadamente)
 DELETE FROM `employees`;
-INSERT INTO `employees` (`id`, `employee_code`, `first_name`, `last_name`, `email`, `password`, `department_id`, `position`, `site_name`, `photo_path`, `status`, `created_at`) VALUES
-	(1, 'EMP001', 'VICTOR', 'RAMOS', 'victor.rs.datsoft@gmail.com', '$2y$10$hjoa6/izjbON6303KeT9GuxstoJqZlEdq.E7N.Y7KBX7qWQzxbq0y', 5, 'JEFE DE SISTEMAS', 'HUANCAYO', 'default.png', 'activo', '2025-11-21 09:30:28'),
-	(2, 'EMP002', 'CARLOS', 'RAMIREZ', 'carlosramirez@correo.com', '$2y$10$cOhxXeHlMBYzpdFVTcx/2.rwrHetLpnXBRDIodanipx6G.FBNEESi', 2, 'ASISTENTE ADMINISTRATIVO', 'LIMA', 'default.png', 'activo', '2025-11-21 10:26:33'),
-	(3, 'EMP003', 'MARIA', 'ARIAS', 'mariaarias@correo.com', '$2y$10$NebEGaM19vO7si.8ctlfvuJQPaHPgh0j6znFxLs8PQJVeM2vU4khm', 3, 'JEFE DE RRHH', 'PASCO', 'default.png', 'activo', '2025-11-21 10:37:16');
+INSERT INTO `employees` (`id`, `employee_code`, `first_name`, `last_name`, `email`, `password`, `department_id`, `schedule_id`, `position`, `site_name`, `photo_path`, `status`, `created_at`) VALUES
+	(1, 'EMP001', 'VICTOR', 'RAMOS', 'victor.rs.datsoft@gmail.com', '$2y$10$hjoa6/izjbON6303KeT9GuxstoJqZlEdq.E7N.Y7KBX7qWQzxbq0y', 5, 1, 'JEFE DE SISTEMAS', 'HUANCAYO', 'default.png', 'activo', '2025-11-21 09:30:28'),
+	(2, 'EMP002', 'CARLOS', 'RAMIREZ', 'carlosramirez@correo.com', '$2y$10$cOhxXeHlMBYzpdFVTcx/2.rwrHetLpnXBRDIodanipx6G.FBNEESi', 2, 1, 'ASISTENTE ADMINISTRATIVO', 'LIMA', 'default.png', 'activo', '2025-11-21 10:26:33'),
+	(3, 'EMP003', 'MARIA', 'ARIAS', 'mariaarias@correo.com', '$2y$10$NebEGaM19vO7si.8ctlfvuJQPaHPgh0j6znFxLs8PQJVeM2vU4khm', 3, 1, 'JEFE DE RRHH', 'PASCO', 'default.png', 'activo', '2025-11-21 10:37:16');
 
 -- Volcando estructura para tabla control_acceso_db.incidents
 CREATE TABLE IF NOT EXISTS `incidents` (

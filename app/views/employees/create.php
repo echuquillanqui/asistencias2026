@@ -65,6 +65,15 @@
                                     <option value="HUANCAVELICA">HUANCAVELICA</option>
                                 </select>
                             </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Horario</label>
+                                <select name="schedule_id" class="form-select">
+                                    <option value="">-- Horario General --</option>
+                                    <?php foreach(($schedules ?? []) as $schedule): ?>
+                                        <option value="<?php echo $schedule['id']; ?>"><?php echo htmlspecialchars($schedule['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                         </div>
 
                         <hr>

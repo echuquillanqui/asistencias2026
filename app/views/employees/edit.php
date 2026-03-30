@@ -79,6 +79,17 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Horario</label>
+                            <select name="schedule_id" class="form-select">
+                                <option value="">-- Horario General --</option>
+                                <?php foreach($schedules as $schedule): ?>
+                                    <option value="<?php echo $schedule['id']; ?>" <?php echo ((int)($emp['schedule_id'] ?? 0) === (int)$schedule['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($schedule['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     </div>
 
                     <hr class="my-4">

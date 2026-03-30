@@ -33,10 +33,11 @@ class Attendance {
     // 3. OBTENER HISTORIAL POR RANGO DE FECHAS (Para Reporte Excel)
     public function getHistoryByDate($start, $end) {
         $query = "SELECT a.date_log, a.check_in_time, a.breakfast_time, a.lunch_out_time, a.lunch_return_time, a.check_out_time, a.total_hours, a.status,
-                         e.first_name, e.last_name, e.employee_code, d.name as department
+                         e.first_name, e.last_name, e.employee_code, d.name as department, s.entry_time as schedule_entry_time
                   FROM " . $this->table . " a
                   INNER JOIN employees e ON a.employee_id = e.id
                   LEFT JOIN departments d ON e.department_id = d.id
+                  LEFT JOIN schedules s ON e.schedule_id = s.id
                   WHERE a.date_log BETWEEN :start AND :end
                   ORDER BY a.date_log DESC, a.check_in_time DESC";
         
@@ -63,10 +64,11 @@ class Attendance {
     // 5. HISTORIAL CON FILTROS (Para Pantalla Historial)
     public function getLogsWithFilters($employee_id, $start, $end) {
         $query = "SELECT a.date_log, a.check_in_time, a.breakfast_time, a.lunch_out_time, a.lunch_return_time, a.check_out_time, a.total_hours, a.status,
-                         e.first_name, e.last_name, e.employee_code, d.name as department
+                         e.first_name, e.last_name, e.employee_code, d.name as department, s.entry_time as schedule_entry_time
                   FROM " . $this->table . " a
                   INNER JOIN employees e ON a.employee_id = e.id
                   LEFT JOIN departments d ON e.department_id = d.id
+                  LEFT JOIN schedules s ON e.schedule_id = s.id
                   WHERE a.date_log BETWEEN :start AND :end";
         
         if (!empty($employee_id)) {

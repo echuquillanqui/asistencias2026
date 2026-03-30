@@ -34,9 +34,14 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>👨‍💼 Lista de Empleados</h2>
             
-            <button class="btn btn-success shadow" data-bs-toggle="modal" data-bs-target="#newEmployeeModal">
-                <i class="bi bi-plus-circle"></i> Nuevo Empleado
-            </button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary shadow" data-bs-toggle="modal" data-bs-target="#scheduleModal">
+                    <i class="bi bi-clock-history"></i> Gestionar Horarios
+                </button>
+                <button class="btn btn-success shadow" data-bs-toggle="modal" data-bs-target="#newEmployeeModal">
+                    <i class="bi bi-plus-circle"></i> Nuevo Empleado
+                </button>
+            </div>
         </div>
 
         <div class="card shadow-sm border-0 mb-4">
@@ -58,6 +63,24 @@
                 Operación realizada con éxito. <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
+        <?php if(isset($_GET['err']) && $_GET['err'] === 'horario_duplicado'): ?>
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm">
+                Ya existe un horario con ese nombre.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+        <?php if(isset($_GET['err']) && $_GET['err'] === 'asignacion_invalida'): ?>
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm">
+                No se pudo asignar el horario. Verifique el modo de asignación y vuelva a intentar.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+        <?php if(isset($_GET['err']) && $_GET['err'] === 'horario_invalido'): ?>
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm">
+                Debe seleccionar o crear un horario válido.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
         <?php if(isset($_GET['err']) && $_GET['err'] === 'sede_invalida'): ?>
             <div class="alert alert-danger alert-dismissible fade show shadow-sm">
                 Sede inválida. Solo se permiten: HUANCAYO, LIMA, PASCO, SAN RAMON, HUANCAVELICA.
@@ -69,7 +92,7 @@
             <div class="card-body p-0">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
-                        <tr><th class="ps-4">Estado</th><th>Nombre Completo</th><th>Departamento</th><th>Sede</th><th>Cargo</th><th class="text-end pe-4">Acciones</th></tr>
+                        <tr><th class="ps-4">Estado</th><th>Nombre Completo</th><th>Departamento</th><th>Sede</th><th>Horario</th><th>Cargo</th><th class="text-end pe-4">Acciones</th></tr>
                     </thead>
                     <tbody>
                         <?php if(isset($employees) && count($employees) > 0): ?>
@@ -87,6 +110,13 @@
                                         <span class="badge text-bg-secondary">Sin sede</span>
                                     <?php endif; ?>
                                 </td>
+                                <td>
+                                    <?php if (!empty($emp['schedule_name'])): ?>
+                                        <span class="badge text-bg-info"><?php echo htmlspecialchars($emp['schedule_name']); ?></span>
+                                    <?php else: ?>
+                                        <span class="badge text-bg-secondary">General</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo $emp['position']; ?></td>
                                 <td class="text-end pe-4">
                                     <?php if($emp['status'] == 'activo'): ?>
@@ -102,7 +132,7 @@
                             </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <tr><td colspan="6" class="text-center p-5 text-muted">No hay empleados registrados.</td></tr>
+                            <tr><td colspan="7" class="text-center p-5 text-muted">No hay empleados registrados.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -162,6 +192,15 @@
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Horario</label>
+                    <select name="schedule_id" class="form-select">
+                        <option value="">-- Horario General --</option>
+                        <?php foreach($schedules as $schedule): ?>
+                            <option value="<?php echo $schedule['id']; ?>"><?php echo htmlspecialchars($schedule['name']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
                 
                 <div class="col-12 mt-4">
                     <div class="alert alert-info mb-0 small">
@@ -184,6 +223,95 @@
   <div class="modal-dialog modal-sm"><div class="modal-content"><div class="modal-header bg-primary text-white"><h5 class="modal-title">Carnet Digital</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body text-center"><div id="printableArea"><img src="" id="qrImage" class="img-fluid mb-3 border rounded p-1 shadow-sm" style="width: 180px;"><h4 id="carnetName" class="fw-bold mb-1 text-dark"></h4><p id="carnetPos" class="text-muted mb-2 text-uppercase small fw-bold"></p><div class="mt-2"><span id="carnetCode" class="badge bg-dark fs-6 font-monospace px-3 py-2"></span></div></div></div><div class="modal-footer justify-content-center bg-light"><button type="button" class="btn btn-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button></div></div></div>
 </div>
 
+
+<div class="modal fade" id="scheduleModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold"><i class="bi bi-clock"></i> Creación y Asignación de Horarios</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-light fw-bold">Crear nuevo horario</div>
+              <div class="card-body">
+                <form action="?c=Employee&a=create_schedule" method="POST">
+                  <div class="mb-2">
+                    <label class="form-label">Nombre del Horario</label>
+                    <input type="text" name="schedule_name" class="form-control" required placeholder="Ej: TURNO MAÑANA">
+                  </div>
+                  <div class="mb-2"><label class="form-label">Entrada</label><input type="text" name="entry_time" class="form-control" value="08:00" required></div>
+                  <div class="mb-2"><label class="form-label">Desayuno</label><input type="text" name="breakfast_time" class="form-control" value="09:30" required></div>
+                  <div class="mb-2"><label class="form-label">Salida Almuerzo</label><input type="text" name="lunch_out_time" class="form-control" value="13:00" required></div>
+                  <div class="mb-2"><label class="form-label">Retorno Almuerzo</label><input type="text" name="lunch_return_time" class="form-control" value="14:00" required></div>
+                  <div class="mb-3"><label class="form-label">Salida Final</label><input type="text" name="check_out_time" class="form-control" value="18:00" required></div>
+                  <button type="submit" class="btn btn-primary w-100">Guardar Horario</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-light fw-bold">Asignar horario (individual o grupal)</div>
+              <div class="card-body">
+                <form action="?c=Employee&a=assign_schedule" method="POST">
+                  <div class="mb-2">
+                    <label class="form-label">Horario</label>
+                    <select class="form-select" name="schedule_id" required>
+                      <option value="">-- Seleccionar horario --</option>
+                      <?php foreach($schedules as $schedule): ?>
+                        <option value="<?php echo $schedule['id']; ?>"><?php echo htmlspecialchars($schedule['name']); ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">Modo de asignación</label>
+                    <select class="form-select" name="assign_mode" id="assignMode" onchange="toggleAssignMode()">
+                      <option value="individual">Individual (seleccionar empleados)</option>
+                      <option value="department">Por departamento (grupo)</option>
+                      <option value="site">Por sede (grupo)</option>
+                    </select>
+                  </div>
+                  <div id="assignEmployees">
+                    <label class="form-label">Empleados</label>
+                    <select class="form-select" name="employee_ids[]" multiple size="8">
+                      <?php foreach($employees as $emp): ?>
+                        <option value="<?php echo $emp['id']; ?>"><?php echo $emp['first_name'] . ' ' . $emp['last_name']; ?> (<?php echo $emp['employee_code']; ?>)</option>
+                      <?php endforeach; ?>
+                    </select>
+                    <small class="text-muted">Puede seleccionar uno o varios empleados.</small>
+                  </div>
+                  <div id="assignDepartment" class="d-none">
+                    <label class="form-label">Departamento</label>
+                    <select class="form-select" name="department_id">
+                      <option value="">-- Seleccionar --</option>
+                      <?php foreach($departments as $dept): ?>
+                        <option value="<?php echo $dept['id']; ?>"><?php echo htmlspecialchars($dept['name']); ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                  </div>
+                  <div id="assignSite" class="d-none">
+                    <label class="form-label">Sede</label>
+                    <select class="form-select" name="site_name">
+                      <option value="">-- Seleccionar --</option>
+                      <?php foreach($availableSites as $site): ?>
+                        <option value="<?php echo $site; ?>"><?php echo $site; ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                  </div>
+                  <button type="submit" class="btn btn-success w-100 mt-3">Asignar Horario</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
@@ -191,6 +319,13 @@
         event.preventDefault();
         Swal.fire({ title: titulo, text: mensaje, icon: icono, showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Si', cancelButtonText: 'No' }).then((r) => { if (r.isConfirmed) window.location.href = url; })
     }
+    function toggleAssignMode() {
+        const mode = document.getElementById('assignMode').value;
+        document.getElementById('assignEmployees').classList.toggle('d-none', mode !== 'individual');
+        document.getElementById('assignDepartment').classList.toggle('d-none', mode !== 'department');
+        document.getElementById('assignSite').classList.toggle('d-none', mode !== 'site');
+    }
+
     function verCarnet(n, c, p) {
         document.getElementById('qrImage').src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + c;
         document.getElementById('carnetName').innerText = n; document.getElementById('carnetCode').innerText = c; document.getElementById('carnetPos').innerText = p;

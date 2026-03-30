@@ -79,7 +79,11 @@ class ReportController {
                 }
                 
                 // USAR LA VARIABLE DE LA BD PARA CALCULAR
-                if ($row['check_in_time'] > $horaLimite) $puntual = "TARDE";
+                $horaLimiteEmpleado = !empty($row['schedule_entry_time'])
+                    ? $this->getFirstScheduleTime($row['schedule_entry_time'], $horaLimite)
+                    : $horaLimite;
+
+                if ($row['check_in_time'] > $horaLimiteEmpleado) $puntual = "TARDE";
                 
                 $est = ($row['check_out_time']) ? 'Completado' : 'En Turno';
                 fputcsv($output, [

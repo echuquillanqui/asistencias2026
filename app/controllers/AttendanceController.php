@@ -90,7 +90,10 @@ class AttendanceController {
 
             if(!empty($code)) {
                 // A. Buscar al empleado por su código
-                $queryEmp = "SELECT id, first_name FROM employees WHERE employee_code = :code LIMIT 1";
+                $queryEmp = "SELECT e.id, e.first_name, s.entry_time as schedule_entry_time \
+                             FROM employees e \
+                             LEFT JOIN schedules s ON e.schedule_id = s.id \
+                             WHERE e.employee_code = :code LIMIT 1";
                 $stmtEmp = $db->prepare($queryEmp);
                 $stmtEmp->bindParam(':code', $code);
                 $stmtEmp->execute();
@@ -112,7 +115,9 @@ class AttendanceController {
 
                     if (!$registroHoy) {
                         // CASO 1: No existe registro hoy -> ES UNA ENTRADA
-                        $entrySchedule = $this->getSettingValue($db, 'entry_time', '08:00');
+                        $entrySchedule = !empty($empleado['schedule_entry_time'])
+                            ? $empleado['schedule_entry_time']
+                            : $this->getSettingValue($db, 'entry_time', '08:00');
                         $entryLimit = $this->getFirstScheduleTime($entrySchedule, '08:00:00');
                         $status = (strtotime($horaActual) > strtotime($entryLimit)) ? 'tarde' : 'a_tiempo';
 
