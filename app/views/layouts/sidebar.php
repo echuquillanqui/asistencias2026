@@ -31,6 +31,11 @@ function renderMenu($c, $a) {
                 </a>
             </li>
             <li>
+                <a href="?c=Schedule" class="<?php echo ($c=='Schedule') ? 'active' : ''; ?>">
+                    <i class="bi bi-clock-fill"></i> Horarios
+                </a>
+            </li>
+            <li>
                 <a href="?c=User" class="<?php echo ($c=='User') ? 'active' : ''; ?>">
                     <i class="bi bi-person-gear"></i> Usuarios Sistema
                 </a>

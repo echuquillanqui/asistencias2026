@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS `schedules` (
   `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
   `entry_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `breakfast_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `breakfast_time` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `breakfast_return_time` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `lunch_out_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `lunch_return_time` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
