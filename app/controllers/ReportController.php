@@ -47,7 +47,11 @@ class ReportController {
         $this->settingModel = new Setting($this->db); // 3. INICIALIZAR
     }
 
-    public function index() { require_once '../app/views/reports/index.php'; }
+    public function index() {
+        $employees = $this->employeeModel->read();
+        $sites = $this->employeeModel->getSites();
+        require_once '../app/views/reports/index.php';
+    }
 
     public function history() {
         $employees = $this->employeeModel->read();
@@ -67,11 +71,35 @@ class ReportController {
     public function export() {
         if (isset($_POST['start_date'])) {
             $start = $_POST['start_date']; $end = $_POST['end_date'];
+            $filterType = $_POST['filter_type'] ?? 'all';
+            $siteName = '';
+            $employeeId = null;
+
+            if ($filterType === 'site') {
+                $requestedSite = trim($_POST['site_name'] ?? '');
+                if ($requestedSite !== '' && in_array($requestedSite, $this->employeeModel->getSites(), true)) {
+                    $siteName = $requestedSite;
+                } else {
+                    header('Location: ?c=Report&err=filtro_invalido');
+                    exit;
+                }
+            } elseif ($filterType === 'employee') {
+                $requestedEmployeeId = filter_var($_POST['employee_id'] ?? null, FILTER_VALIDATE_INT);
+                if ($requestedEmployeeId && $this->employeeModel->getById($requestedEmployeeId)) {
+                    $employeeId = (int)$requestedEmployeeId;
+                } else {
+                    header('Location: ?c=Report&err=filtro_invalido');
+                    exit;
+                }
+            } elseif ($filterType !== 'all') {
+                header('Location: ?c=Report&err=filtro_invalido');
+                exit;
+            }
             
             // OBTENER HORA DE LA BD TAMBIÉN PARA EL EXCEL
             $horaLimite = $this->getFirstScheduleTime($this->settingModel->get('entry_time'), '08:00:00');
 
-            $data = $this->attendanceModel->getHistoryByDate($start, $end);
+            $data = $this->attendanceModel->getHistoryByDate($start, $end, $siteName, $employeeId);
             
             $filename = "Reporte_Asistencia_" . date('Ymd') . ".xls";
             header('Content-Type: application/vnd.ms-excel; charset=utf-8');
@@ -117,6 +145,7 @@ class ReportController {
                     '<Row>'
                     . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$row['employee_code']) . '</Data></Cell>'
                     . '<Cell><Data ss:Type="String">' . htmlspecialchars($row['first_name'].' '.$row['last_name']) . '</Data></Cell>'
+                    . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)($row['site_name'] ?? '')) . '</Data></Cell>'
                     . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$row['department']) . '</Data></Cell>'
                     . '<Cell><Data ss:Type="String">' . htmlspecialchars((string)$row['date_log']) . '</Data></Cell>'
                     . '<Cell' . $entradaStyle . '><Data ss:Type="String">' . htmlspecialchars((string)$row['check_in_time']) . '</Data></Cell>'
@@ -163,6 +192,7 @@ class ReportController {
             echo '<Row>'
                 . '<Cell ss:StyleID="header"><Data ss:Type="String">Código</Data></Cell>'
                 . '<Cell ss:StyleID="header"><Data ss:Type="String">Empleado</Data></Cell>'
+                . '<Cell ss:StyleID="header"><Data ss:Type="String">Sede</Data></Cell>'
                 . '<Cell ss:StyleID="header"><Data ss:Type="String">Depto</Data></Cell>'
                 . '<Cell ss:StyleID="header"><Data ss:Type="String">Fecha</Data></Cell>'
                 . '<Cell ss:StyleID="header"><Data ss:Type="String">Entrada</Data></Cell>'
