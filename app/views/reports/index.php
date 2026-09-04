@@ -24,6 +24,12 @@
     <div class="flex-grow-1 p-4" style="height: 100vh; overflow-y: auto;">
         <h2 class="mb-4 fw-bold text-secondary">📊 Generar Reportes</h2>
 
+        <?php if (($_GET['err'] ?? '') === 'filtro_invalido'): ?>
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>Selecciona una sede o un empleado válido para generar el reporte.
+            </div>
+        <?php endif; ?>
+
         <div class="row">
             <div class="col-md-7">
                 <div class="card shadow border-0">
@@ -31,7 +37,7 @@
                         <h5 class="m-0"><i class="bi bi-file-earmark-excel"></i> Exportar a Excel (.xls)</h5>
                     </div>
                     <div class="card-body p-4">
-                        <p class="text-muted mb-4">Selecciona el rango de fechas para descargar el historial de asistencia completo.</p>
+                        <p class="text-muted mb-4">Selecciona el rango de fechas y descarga el historial completo, por sede o por empleado.</p>
                         
                         <form action="?c=Report&a=export" method="POST">
                             <div class="mb-3">
@@ -41,6 +47,37 @@
                             <div class="mb-4">
                                 <label class="form-label fw-bold">Fecha Fin</label>
                                 <input type="date" name="end_date" class="form-control form-control-lg" required value="<?php echo date('Y-m-d'); ?>">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Descargar reporte</label>
+                                <select name="filter_type" id="filterType" class="form-select form-select-lg">
+                                    <option value="all">Completo (todas las sedes y empleados)</option>
+                                    <option value="site">Por sede</option>
+                                    <option value="employee">Por empleado</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4 d-none" id="siteFilter">
+                                <label class="form-label fw-bold" for="siteName">Sede</label>
+                                <select name="site_name" id="siteName" class="form-select form-select-lg">
+                                    <option value="">-- Seleccionar sede --</option>
+                                    <?php foreach ($sites as $site): ?>
+                                        <option value="<?php echo htmlspecialchars($site); ?>"><?php echo htmlspecialchars($site); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="mb-4 d-none" id="employeeFilter">
+                                <label class="form-label fw-bold" for="employeeId">Empleado</label>
+                                <select name="employee_id" id="employeeId" class="form-select form-select-lg">
+                                    <option value="">-- Seleccionar empleado --</option>
+                                    <?php foreach ($employees as $employee): ?>
+                                        <option value="<?php echo (int)$employee['id']; ?>">
+                                            <?php echo htmlspecialchars($employee['first_name'] . ' ' . $employee['last_name'] . ' (' . $employee['employee_code'] . ')'); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                             
                             <div class="d-grid">
@@ -68,5 +105,24 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const filterType = document.getElementById('filterType');
+    const siteFilter = document.getElementById('siteFilter');
+    const employeeFilter = document.getElementById('employeeFilter');
+    const siteName = document.getElementById('siteName');
+    const employeeId = document.getElementById('employeeId');
+
+    function updateReportFilter() {
+        const bySite = filterType.value === 'site';
+        const byEmployee = filterType.value === 'employee';
+        siteFilter.classList.toggle('d-none', !bySite);
+        employeeFilter.classList.toggle('d-none', !byEmployee);
+        siteName.required = bySite;
+        employeeId.required = byEmployee;
+    }
+
+    filterType.addEventListener('change', updateReportFilter);
+    updateReportFilter();
+</script>
 </body>
 </html>

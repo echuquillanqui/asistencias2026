@@ -127,6 +127,11 @@ class Employee {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getSites() {
+        $stmt = $this->conn->query("SELECT DISTINCT site_name FROM " . $this->table . " WHERE site_name IS NOT NULL AND site_name <> '' ORDER BY site_name ASC");
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     // 10. CREAR HORARIO
     public function createSchedule($data) {
         $query = "INSERT INTO schedules (name, entry_time, breakfast_time, breakfast_return_time, lunch_out_time, lunch_return_time, check_out_time)
