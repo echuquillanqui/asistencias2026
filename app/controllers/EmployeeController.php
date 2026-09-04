@@ -14,6 +14,7 @@ class EmployeeController {
             return;
         }
         $this->db->exec("ALTER TABLE schedules ADD COLUMN IF NOT EXISTS breakfast_return_time VARCHAR(255) NULL AFTER breakfast_time");
+        $this->db->exec("ALTER TABLE schedules MODIFY breakfast_time VARCHAR(255) NULL");
         self::$scheduleBreakfastReturnChecked = true;
     }
 
@@ -143,7 +144,7 @@ class EmployeeController {
         $data = [
             'name' => $name,
             'entry_time' => strtoupper(trim($_POST['entry_time'] ?? '08:00')),
-            'breakfast_time' => strtoupper(trim($_POST['breakfast_time'] ?? '09:30')),
+            'breakfast_time' => strtoupper(trim($_POST['breakfast_time'] ?? '')),
             'breakfast_return_time' => strtoupper(trim($_POST['breakfast_return_time'] ?? '')),
             'lunch_out_time' => strtoupper(trim($_POST['lunch_out_time'] ?? '13:00')),
             'lunch_return_time' => strtoupper(trim($_POST['lunch_return_time'] ?? '14:00')),
