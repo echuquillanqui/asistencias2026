@@ -85,15 +85,11 @@
                                     <option value="check_out">Salida final</option>
                                 </select>
                             </div>
-                            <div class="form-floating mb-3">
-                                <input type="text" name="employee_code" id="employee_code" 
-                                       class="form-control text-center fw-bold fs-4" 
-                                       placeholder="Código" autofocus>
-                                <label>Código QR (Ej: EMP001)</label>
+                            <input type="hidden" name="employee_code" id="employee_code">
+                            <div class="alert alert-primary text-center mb-0" role="status">
+                                <i class="bi bi-camera-fill me-1"></i>
+                                Presenta ante la cámara el QR dinámico de tu portal.
                             </div>
-                            <button type="submit" class="btn btn-primary w-100 btn-lg py-3 fw-bold shadow">
-                                Registrar Marcación
-                            </button>
                         </form>
                         <p class="text-center text-muted small mt-3 mb-0">
                             <i class="bi bi-info-circle"></i> Secuencia: Entrada → Salida desayuno → Retorno desayuno → Salida almuerzo → Retorno almuerzo → Salida (desayuno opcional)

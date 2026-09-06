@@ -106,6 +106,21 @@ CREATE TABLE IF NOT EXISTS `employees` (
   CONSTRAINT `employees_ibfk_2` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Tokens temporales y de un solo uso para marcación por QR
+CREATE TABLE IF NOT EXISTS `attendance_qr_tokens` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `token_hash` char(64) COLLATE utf8mb4_general_ci NOT NULL,
+  `employee_id` int NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_attendance_qr_token_hash` (`token_hash`),
+  KEY `idx_attendance_qr_employee` (`employee_id`),
+  KEY `idx_attendance_qr_expiry` (`expires_at`),
+  CONSTRAINT `fk_attendance_qr_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- Volcando datos para la tabla control_acceso_db.employees: ~2 rows (aproximadamente)
 DELETE FROM `employees`;
 INSERT INTO `employees` (`id`, `employee_code`, `first_name`, `last_name`, `email`, `password`, `department_id`, `schedule_id`, `position`, `site_name`, `photo_path`, `status`, `created_at`) VALUES
