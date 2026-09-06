@@ -41,6 +41,7 @@
             <div class="mt-3">
                 <p class="mb-1 fw-semibold text-success"><i class="bi bi-shield-check me-1"></i>Código seguro de un solo uso</p>
                 <p class="text-muted small mb-0">Se renovará automáticamente en <span id="countdown" class="countdown fw-bold">30</span> segundos.</p>
+                <p class="text-muted small mt-2 mb-0"><i class="bi bi-phone-lock me-1"></i>Tu cuenta está vinculada a este dispositivo.</p>
             </div>
         </div>
         <div class="card-footer bg-primary-subtle border-0 py-3 small text-primary-emphasis">

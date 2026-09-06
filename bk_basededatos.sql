@@ -121,6 +121,17 @@ CREATE TABLE IF NOT EXISTS `attendance_qr_tokens` (
   CONSTRAINT `fk_attendance_qr_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Un único dispositivo autorizado por empleado para acceder al QR dinámico
+CREATE TABLE IF NOT EXISTS `employee_portal_devices` (
+  `employee_id` int NOT NULL,
+  `device_token_hash` char(64) COLLATE utf8mb4_general_ci NOT NULL,
+  `active_session_hash` char(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `registered_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_access_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`employee_id`),
+  CONSTRAINT `fk_portal_device_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- Volcando datos para la tabla control_acceso_db.employees: ~2 rows (aproximadamente)
 DELETE FROM `employees`;
 INSERT INTO `employees` (`id`, `employee_code`, `first_name`, `last_name`, `email`, `password`, `department_id`, `schedule_id`, `position`, `site_name`, `photo_path`, `status`, `created_at`) VALUES

@@ -40,9 +40,9 @@ class Employee {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // 3. CREAR (Con contraseña por defecto '123456')
+    // 3. CREAR con una contraseña inicial única definida al registrar al empleado.
     public function create($data) {
-        $defaultPass = password_hash("123456", PASSWORD_DEFAULT);
+        $initialPassword = password_hash($data['initial_password'], PASSWORD_DEFAULT);
         $query = "INSERT INTO " . $this->table . " 
                  (employee_code, first_name, last_name, email, password, department_id, position, site_name, schedule_id, status) 
                  VALUES (:code, :fname, :lname, :email, :pass, :dept, :pos, :site, :schedule_id, 'activo')";
@@ -52,7 +52,7 @@ class Employee {
         $stmt->bindParam(':fname', $data['first_name']);
         $stmt->bindParam(':lname', $data['last_name']);
         $stmt->bindParam(':email', $data['email']);
-        $stmt->bindParam(':pass', $defaultPass);
+        $stmt->bindParam(':pass', $initialPassword);
         $stmt->bindParam(':dept', $data['department_id']);
         $stmt->bindParam(':pos', $data['position']);
         $stmt->bindParam(':site', $data['site_name']);

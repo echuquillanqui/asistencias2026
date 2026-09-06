@@ -14,14 +14,6 @@
         .sidebar i { width: 25px; }
         .table-inactive { opacity: 0.6; background-color: #f8f9fa; }
 
-        /* CSS para imprimir carnet */
-        @media print {
-            body * { visibility: hidden; }
-            .modal-backdrop, .modal-header, .modal-footer, .sidebar { display: none !important; }
-            #printableArea, #printableArea * { visibility: visible; }
-            #printableArea { position: absolute; left: 50%; top: 50px; transform: translateX(-50%); width: 350px; border: 2px solid #333; padding: 30px; border-radius: 15px; text-align: center; }
-            #qrImage { width: 200px !important; height: 200px !important; }
-        }
     </style>
 </head>
 <body class="bg-light">
@@ -123,7 +115,13 @@
                                 <td><?php echo $emp['position']; ?></td>
                                 <td class="text-end pe-4">
                                     <?php if($emp['status'] == 'activo'): ?>
-                                        <button class="btn btn-sm btn-info text-white shadow-sm" onclick="verCarnet('<?php echo $emp['first_name']; ?>', '<?php echo $emp['employee_code']; ?>', '<?php echo $emp['position']; ?>')"><i class="bi bi-qr-code"></i></button>
+                                        <form action="?c=Employee&amp;a=reset_portal_device" method="POST" class="d-inline" onsubmit="return confirm('¿Desvincular el teléfono de este empleado? Deberá iniciar sesión nuevamente en el dispositivo que quiera registrar.');">
+                                            <input type="hidden" name="employee_id" value="<?php echo (int)$emp['id']; ?>">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <button type="submit" class="btn btn-sm btn-info text-white shadow-sm" title="Restablecer dispositivo del portal">
+                                                <i class="bi bi-phone"></i>
+                                            </button>
+                                        </form>
                                     <?php endif; ?>
                                     <a href="?c=Employee&a=edit&id=<?php echo $emp['id']; ?>" class="btn btn-sm btn-warning shadow-sm"><i class="bi bi-pencil-fill"></i></a>
                                     <?php if($emp['status'] == 'activo'): ?>
@@ -172,6 +170,11 @@
                     <label class="form-label fw-bold">Código Empleado (DNI/ID)</label>
                     <input type="text" name="employee_code" class="form-control" required placeholder="Ej: EMP005">
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Contraseña inicial única</label>
+                    <input type="password" name="initial_password" class="form-control" required minlength="8" autocomplete="new-password">
+                    <div class="form-text">Mínimo 8 caracteres. No utilices una contraseña común para todos.</div>
+                </div>
 
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Departamento</label>
@@ -205,11 +208,6 @@
                     </select>
                 </div>
                 
-                <div class="col-12 mt-4">
-                    <div class="alert alert-info mb-0 small">
-                        <i class="bi bi-info-circle"></i> La contraseña por defecto será: <strong>123456</strong>
-                    </div>
-                </div>
             </div>
 
           </div>
@@ -221,11 +219,6 @@
     </div>
   </div>
 </div>
-
-<div class="modal fade" id="carnetModal" tabindex="-1">
-  <div class="modal-dialog modal-sm"><div class="modal-content"><div class="modal-header bg-primary text-white"><h5 class="modal-title">Carnet Digital</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body text-center"><div id="printableArea"><img src="" id="qrImage" class="img-fluid mb-3 border rounded p-1 shadow-sm" style="width: 180px;"><h4 id="carnetName" class="fw-bold mb-1 text-dark"></h4><p id="carnetPos" class="text-muted mb-2 text-uppercase small fw-bold"></p><div class="mt-2"><span id="carnetCode" class="badge bg-dark fs-6 font-monospace px-3 py-2"></span></div></div></div><div class="modal-footer justify-content-center bg-light"><button type="button" class="btn btn-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button></div></div></div>
-</div>
-
 
 <div class="modal fade" id="scheduleModal" tabindex="-1">
   <div class="modal-dialog modal-xl">
@@ -330,11 +323,6 @@
         document.getElementById('assignSite').classList.toggle('d-none', mode !== 'site');
     }
 
-    function verCarnet(n, c, p) {
-        document.getElementById('qrImage').src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + c;
-        document.getElementById('carnetName').innerText = n; document.getElementById('carnetCode').innerText = c; document.getElementById('carnetPos').innerText = p;
-        new bootstrap.Modal(document.getElementById('carnetModal')).show();
-    }
 </script>
 </body>
 </html>
