@@ -9,6 +9,18 @@ class EmployeeController {
 
     private static $scheduleBreakfastReturnChecked = false;
 
+    private function ensurePortalDevicesTable() {
+        $this->db->exec("CREATE TABLE IF NOT EXISTS employee_portal_devices (
+            employee_id INT NOT NULL,
+            device_token_hash CHAR(64) NOT NULL,
+            active_session_hash CHAR(64) NULL,
+            registered_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_access_at DATETIME NULL,
+            PRIMARY KEY (employee_id),
+            CONSTRAINT fk_portal_device_employee FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+    }
+
     private function ensureScheduleBreakfastReturnColumn() {
         if (self::$scheduleBreakfastReturnChecked) {
             return;
@@ -36,6 +48,46 @@ class EmployeeController {
         $this->employeeModel = new Employee($this->db);
     }
 
+    public function reset_portal_device() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: ?c=Employee");
+            exit;
+        }
+
+        $submittedToken = $_POST['csrf_token'] ?? '';
+        if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $submittedToken)) {
+            header("Location: ?c=Employee&err=sesion_invalida");
+            exit;
+        }
+
+        $employeeId = filter_input(INPUT_POST, 'employee_id', FILTER_VALIDATE_INT);
+        if (!$employeeId) {
+            header("Location: ?c=Employee&err=empleado_invalido");
+            exit;
+        }
+
+        $this->ensurePortalDevicesTable();
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare("DELETE FROM employee_portal_devices WHERE employee_id = :employee_id");
+            $stmt->execute([':employee_id' => $employeeId]);
+            $tokensTable = $this->db->query("SHOW TABLES LIKE 'attendance_qr_tokens'");
+            if ($tokensTable->fetchColumn()) {
+                $tokens = $this->db->prepare("UPDATE attendance_qr_tokens SET used_at = NOW()
+                                              WHERE employee_id = :employee_id AND used_at IS NULL");
+                $tokens->execute([':employee_id' => $employeeId]);
+            }
+            $this->db->commit();
+        } catch (Throwable $exception) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $exception;
+        }
+        header("Location: ?c=Employee&msg=dispositivo_restablecido");
+        exit;
+    }
+
     private function normalizeScheduleId($scheduleId) {
         if (empty($scheduleId)) {
             return null;
@@ -49,6 +101,10 @@ class EmployeeController {
     }
 
     public function index() {
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        $csrfToken = $_SESSION['csrf_token'];
         $search = isset($_GET['q']) ? $_GET['q'] : "";
         $employees = $this->employeeModel->read($search);
         
@@ -62,6 +118,12 @@ class EmployeeController {
 
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $initialPassword = $_POST['initial_password'] ?? '';
+            if (strlen($initialPassword) < 8) {
+                header("Location: ?c=Employee&err=clave_insegura");
+                exit;
+            }
+
             $siteName = strtoupper(trim($_POST['site_name'] ?? ''));
             if (!in_array($siteName, $this->availableSites, true)) {
                 header("Location: ?c=Employee&err=sede_invalida");
@@ -76,7 +138,8 @@ class EmployeeController {
                 'department_id' => $_POST['department_id'],
                 'position' => $_POST['position'],
                 'site_name' => $siteName,
-                'schedule_id' => $this->normalizeScheduleId($_POST['schedule_id'] ?? null)
+                'schedule_id' => $this->normalizeScheduleId($_POST['schedule_id'] ?? null),
+                'initial_password' => $initialPassword
             ];
             
             if ($this->employeeModel->create($data)) {
