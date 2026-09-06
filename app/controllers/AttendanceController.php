@@ -82,6 +82,60 @@ class AttendanceController {
         $allowedIps = array_filter(array_map('trim', explode(',', $result['setting_value'])));
         return in_array($currentIp, $allowedIps, true);
     }
+
+    private function ensureQrTokensTable($db) {
+        $db->exec("CREATE TABLE IF NOT EXISTS attendance_qr_tokens (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            token_hash CHAR(64) NOT NULL,
+            employee_id INT NOT NULL,
+            expires_at DATETIME NOT NULL,
+            used_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_attendance_qr_token_hash (token_hash),
+            KEY idx_attendance_qr_employee (employee_id),
+            KEY idx_attendance_qr_expiry (expires_at),
+            CONSTRAINT fk_attendance_qr_employee FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+    }
+
+    private function consumeQrToken($db, $scannedValue) {
+        if (strpos($scannedValue, 'ATT:') !== 0) {
+            return null;
+        }
+
+        $token = substr($scannedValue, 4);
+        if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
+            return null;
+        }
+
+        $tokenHash = hash('sha256', $token);
+        $db->beginTransaction();
+        try {
+            $update = $db->prepare("UPDATE attendance_qr_tokens
+                                    SET used_at = NOW()
+                                    WHERE token_hash = :token_hash
+                                      AND used_at IS NULL
+                                      AND expires_at >= NOW()"
+            );
+            $update->execute([':token_hash' => $tokenHash]);
+            if ($update->rowCount() !== 1) {
+                $db->rollBack();
+                return null;
+            }
+
+            $lookup = $db->prepare("SELECT employee_id FROM attendance_qr_tokens WHERE token_hash = :token_hash LIMIT 1");
+            $lookup->execute([':token_hash' => $tokenHash]);
+            $employeeId = $lookup->fetchColumn();
+            $db->commit();
+            return $employeeId ? (int)$employeeId : null;
+        } catch (Throwable $exception) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $exception;
+        }
+    }
     
     // 1. Muestra la vista del Kiosco (Pantalla con cámara)
     public function index() {
@@ -93,6 +147,7 @@ class AttendanceController {
         $database = new Database();
         $db = $database->getConnection();
         $this->ensureBreakfastReturnColumn($db);
+        $this->ensureQrTokensTable($db);
         
         // Inicializamos mensaje vacio
         $message = "";
@@ -106,17 +161,18 @@ class AttendanceController {
                 return;
             }
 
-            // Recibimos el código del escáner
-            $code = isset($_POST['employee_code']) ? $_POST['employee_code'] : '';
+            // El QR contiene un token temporal; nunca el código permanente del empleado.
+            $scannedValue = trim($_POST['employee_code'] ?? '');
+            $employeeId = $this->consumeQrToken($db, $scannedValue);
 
-            if(!empty($code)) {
-                // A. Buscar al empleado por su código
+            if ($employeeId !== null) {
+                // A. Buscar al empleado asociado al token consumido.
                 $queryEmp = "SELECT e.id, e.first_name, s.entry_time as schedule_entry_time
                              FROM employees e
                              LEFT JOIN schedules s ON e.schedule_id = s.id
-                             WHERE e.employee_code = :code LIMIT 1";
+                             WHERE e.id = :employee_id AND e.status = 'activo' LIMIT 1";
                 $stmtEmp = $db->prepare($queryEmp);
-                $stmtEmp->bindParam(':code', $code);
+                $stmtEmp->bindParam(':employee_id', $employeeId, PDO::PARAM_INT);
                 $stmtEmp->execute();
                 $empleado = $stmtEmp->fetch(PDO::FETCH_ASSOC);
 
@@ -271,6 +327,8 @@ class AttendanceController {
                 } else {
                     $error = "Código QR no válido o empleado no encontrado.";
                 }
+            } else {
+                $error = "QR vencido, utilizado o no válido. Genera uno nuevo desde tu portal.";
             }
         }
 
