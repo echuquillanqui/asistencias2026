@@ -54,7 +54,13 @@ foreach (['[Content_Types].xml','xl/workbook.xml','xl/styles.xml','xl/worksheets
     assertSameValue(true, $xml !== false && simplexml_load_string($xml) !== false, 'OOXML válido: ' . $part);
 }
 assertSameValue(true, strpos($zip->getFromName('xl/workbook.xml'), 'Reporte SUNAFIL') !== false, 'nombre de hoja');
-assertSameValue(true, strpos($zip->getFromName('xl/worksheets/sheet1.xml'), 'Empresa de Prueba S.A.C.') !== false, 'datos empresariales');
+$sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
+assertSameValue(true, strpos($sheetXml, 'Empresa de Prueba S.A.C.') !== false, 'datos empresariales');
+assertSameValue(
+    true,
+    strpos($sheetXml, '<autoFilter ') < strpos($sheetXml, '<mergeCells '),
+    'orden OOXML de autoFilter y mergeCells compatible con Excel'
+);
 assertSameValue(true, $zip->getFromName('xl/media/company-logo.png') !== false, 'logo incorporado');
 $zip->close();
 unlink($file);
