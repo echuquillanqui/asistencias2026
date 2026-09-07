@@ -59,4 +59,23 @@ assertSameValue(true, $zip->getFromName('xl/media/company-logo.png') !== false, 
 $zip->close();
 unlink($file);
 unlink($logo);
+
+// Los nombres y metadatos pueden venir con controles de lectores biométricos o
+// bytes mal codificados. Ninguno debe convertir sheet1.xml en una parte ilegible.
+$dirtyRows = $rows;
+$dirtyRows[0]['first_name'] = "Ana\x01 Inválida \xC3";
+$dirtyFile = tempnam(sys_get_temp_dir(), 'xlsx_dirty_test_');
+(new SimpleXlsxWriter())->save($dirtyRows, [
+    'business_name' => "Empresa\x0B de Prueba",
+    'trade_name' => '', 'ruc' => '', 'fiscal_address' => '', 'site' => '', 'address' => '',
+    'period' => '01/09/2026 al 01/09/2026',
+], $dirtyFile);
+$dirtyZip = new ZipArchive();
+assertSameValue(true, $dirtyZip->open($dirtyFile) === true, 'xlsx con caracteres inválidos abre como ZIP');
+$dirtySheet = $dirtyZip->getFromName('xl/worksheets/sheet1.xml');
+assertSameValue(true, simplexml_load_string($dirtySheet) !== false, 'sheet XML tolera datos inválidos');
+assertSameValue(false, strpos($dirtySheet, "\x01") !== false, 'elimina controles XML no permitidos');
+assertSameValue(true, strpos($dirtySheet, "\xEF\xBF\xBD") !== false, 'sustituye bytes UTF-8 inválidos');
+$dirtyZip->close();
+unlink($dirtyFile);
 echo "SunafilReportTest: OK\n";

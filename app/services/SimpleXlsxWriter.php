@@ -77,7 +77,22 @@ class SimpleXlsxWriter {
 
     private function column($number) { $name=''; while ($number) { $number--; $name=chr(65+$number%26).$name; $number=intdiv($number,26); } return $name; }
     private function hhmm($time) { return $time ? substr($time, 0, 5) : ''; }
-    private function escape($value) { return htmlspecialchars((string)$value, ENT_XML1 | ENT_QUOTES, 'UTF-8'); }
+    private function escape($value) {
+        // Datos copiados desde lectores biométricos o campos libres pueden contener
+        // bytes inválidos o caracteres de control que XML 1.0 no admite. Excel
+        // repara esos archivos eliminando sheet1.xml y el reporte queda vacío.
+        $escaped = htmlspecialchars(
+            (string)$value,
+            ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE,
+            'UTF-8'
+        );
+
+        return preg_replace(
+            '/[^\x{0009}\x{000A}\x{000D}\x{0020}-\x{D7FF}\x{E000}-\x{FFFD}\x{10000}-\x{10FFFF}]/u',
+            '',
+            $escaped
+        );
+    }
     private function contentTypes($logo) { return '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'.($logo ? '<Default Extension="'.$logo['extension'].'" ContentType="'.$logo['mime'].'"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>' : '').'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>'; }
     private function rootRelationships() { return '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>'; }
     private function workbook() { return '<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Reporte SUNAFIL" sheetId="1" r:id="rId1"/></sheets><definedNames><definedName name="_xlnm.Print_Titles" localSheetId="0">\'Reporte SUNAFIL\'!$12:$12</definedName></definedNames></workbook>'; }
