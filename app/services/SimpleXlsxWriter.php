@@ -76,8 +76,11 @@ class SimpleXlsxWriter {
             . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
             . '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:M'.$last.'"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="'.$headerRow.'" topLeftCell="A'.($headerRow+1).'" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
             . '<sheetFormatPr defaultRowHeight="18"/><cols>'.$columnXml.'</cols><sheetData>'.implode('', $lines).'</sheetData>'
+            // OOXML exige autoFilter antes de mergeCells. Un XML bien formado
+            // pero con estos elementos invertidos hace que Excel descarte la hoja.
+            . '<autoFilter ref="A'.$headerRow.':M'.$last.'"/>'
             . '<mergeCells count="11"><mergeCell ref="C1:M1"/><mergeCell ref="D2:M2"/><mergeCell ref="D3:M3"/><mergeCell ref="D4:M4"/><mergeCell ref="D5:M5"/><mergeCell ref="D6:M6"/><mergeCell ref="D7:M7"/><mergeCell ref="D8:M8"/><mergeCell ref="D9:M9"/><mergeCell ref="D10:M10"/><mergeCell ref="D11:M11"/></mergeCells>'
-            . '<autoFilter ref="A'.$headerRow.':M'.$last.'"/><printOptions horizontalCentered="1"/><pageMargins left="0.25" right="0.25" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0" paperSize="9"/><headerFooter><oddFooter>&amp;C Página &amp;P de &amp;N</oddFooter></headerFooter>'
+            . '<printOptions horizontalCentered="1"/><pageMargins left="0.25" right="0.25" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0" paperSize="9"/><headerFooter><oddFooter>&amp;C Página &amp;P de &amp;N</oddFooter></headerFooter>'
             . ($hasLogo ? '<drawing r:id="rId1"/>' : '')
             . '</worksheet>';
     }
