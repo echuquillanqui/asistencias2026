@@ -39,15 +39,24 @@ $rows = $service->buildRows([$normal], [
 ], '2026-09-01', '2026-09-01');
 assertSameValue(2, count($rows), 'varias marcaciones no se fusionan');
 
+$logo = tempnam(sys_get_temp_dir(), 'logo_test_');
+file_put_contents($logo, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='));
 $file = tempnam(sys_get_temp_dir(), 'xlsx_test_');
-(new SimpleXlsxWriter())->save($rows, ['period'=>'01/09/2026 al 01/09/2026'], $file);
+(new SimpleXlsxWriter())->save($rows, [
+    'business_name'=>'Empresa de Prueba S.A.C.', 'trade_name'=>'Empresa', 'ruc'=>'20123456789',
+    'fiscal_address'=>'Av. Principal 123', 'site'=>'Sede Lima', 'address'=>'Jr. Trabajo 456',
+    'period'=>'01/09/2026 al 01/09/2026', 'logo_path'=>$logo,
+], $file);
 $zip = new ZipArchive();
 assertSameValue(true, $zip->open($file) === true, 'xlsx abre como ZIP');
-foreach (['[Content_Types].xml','xl/workbook.xml','xl/styles.xml','xl/worksheets/sheet1.xml'] as $part) {
+foreach (['[Content_Types].xml','xl/workbook.xml','xl/styles.xml','xl/worksheets/sheet1.xml','xl/drawings/drawing1.xml'] as $part) {
     $xml = $zip->getFromName($part);
     assertSameValue(true, $xml !== false && simplexml_load_string($xml) !== false, 'OOXML válido: ' . $part);
 }
 assertSameValue(true, strpos($zip->getFromName('xl/workbook.xml'), 'Reporte SUNAFIL') !== false, 'nombre de hoja');
+assertSameValue(true, strpos($zip->getFromName('xl/worksheets/sheet1.xml'), 'Empresa de Prueba S.A.C.') !== false, 'datos empresariales');
+assertSameValue(true, $zip->getFromName('xl/media/company-logo.png') !== false, 'logo incorporado');
 $zip->close();
 unlink($file);
+unlink($logo);
 echo "SunafilReportTest: OK\n";

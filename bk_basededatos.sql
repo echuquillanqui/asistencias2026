@@ -175,7 +175,14 @@ INSERT INTO `settings` (`id`, `setting_name`, `setting_value`) VALUES
 	(3, 'breakfast_time', '09:30,10:00'),
 	(4, 'lunch_out_time', '13:00,13:30'),
 	(5, 'lunch_return_time', '14:00,14:30'),
-	(6, 'check_out_time', '18:00,18:30');
+	(6, 'check_out_time', '18:00,18:30'),
+	(7, 'employer_business_name', ''),
+	(8, 'employer_trade_name', ''),
+	(9, 'employer_ruc', ''),
+	(10, 'employer_fiscal_address', ''),
+	(11, 'workplace_name', ''),
+	(12, 'workplace_address', ''),
+	(13, 'employer_logo', '');
 
 -- Volcando estructura para tabla control_acceso_db.users
 CREATE TABLE IF NOT EXISTS `users` (
