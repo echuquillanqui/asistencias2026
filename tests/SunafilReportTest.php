@@ -78,4 +78,17 @@ assertSameValue(false, strpos($dirtySheet, "\x01") !== false, 'elimina controles
 assertSameValue(true, strpos($dirtySheet, "\xEF\xBF\xBD") !== false, 'sustituye bytes UTF-8 inválidos');
 $dirtyZip->close();
 unlink($dirtyFile);
+
+// Cada parte XML se valida antes de guardarse y el contenedor resultante debe
+// superar también la comprobación de consistencia de ZIP.
+$checkedFile = tempnam(sys_get_temp_dir(), 'xlsx_consistency_test_');
+(new SimpleXlsxWriter())->save($rows, [
+    'business_name' => 'Empresa consistente', 'trade_name' => '', 'ruc' => '',
+    'fiscal_address' => '', 'site' => '', 'address' => '', 'period' => '01/09/2026',
+], $checkedFile);
+$checkedZip = new ZipArchive();
+assertSameValue(true, $checkedZip->open($checkedFile, ZipArchive::CHECKCONS) === true, 'xlsx supera validación de consistencia ZIP');
+assertSameValue(true, $checkedZip->getFromName('xl/worksheets/sheet1.xml') !== '', 'sheet1.xml no está vacío');
+$checkedZip->close();
+unlink($checkedFile);
 echo "SunafilReportTest: OK\n";

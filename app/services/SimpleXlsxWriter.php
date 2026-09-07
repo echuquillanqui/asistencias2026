@@ -4,25 +4,41 @@
 class SimpleXlsxWriter {
     public function save(array $rows, array $metadata, $path) {
         $logo = $this->logoInfo($metadata['logo_path'] ?? '');
+        $parts = [
+            '[Content_Types].xml' => $this->contentTypes($logo),
+            '_rels/.rels' => $this->rootRelationships(),
+            'xl/workbook.xml' => $this->workbook(),
+            'xl/_rels/workbook.xml.rels' => $this->workbookRelationships(),
+            'xl/styles.xml' => $this->styles(),
+            'xl/worksheets/sheet1.xml' => $this->sheet($rows, $metadata, $logo !== null),
+            'docProps/core.xml' => $this->coreProperties(),
+            'docProps/app.xml' => $this->appProperties(),
+        ];
+        if ($logo !== null) {
+            $parts['xl/worksheets/_rels/sheet1.xml.rels'] = $this->sheetRelationships();
+            $parts['xl/drawings/drawing1.xml'] = $this->drawing($logo);
+            $parts['xl/drawings/_rels/drawing1.xml.rels'] = $this->drawingRelationships($logo['filename']);
+        }
+
         $zip = new ZipArchive();
         if ($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new RuntimeException('No se pudo crear el archivo Excel.');
         }
-        $zip->addFromString('[Content_Types].xml', $this->contentTypes($logo));
-        $zip->addFromString('_rels/.rels', $this->rootRelationships());
-        $zip->addFromString('xl/workbook.xml', $this->workbook());
-        $zip->addFromString('xl/_rels/workbook.xml.rels', $this->workbookRelationships());
-        $zip->addFromString('xl/styles.xml', $this->styles());
-        $zip->addFromString('xl/worksheets/sheet1.xml', $this->sheet($rows, $metadata, $logo !== null));
-        if ($logo !== null) {
-            $zip->addFromString('xl/worksheets/_rels/sheet1.xml.rels', $this->sheetRelationships());
-            $zip->addFromString('xl/drawings/drawing1.xml', $this->drawing($logo));
-            $zip->addFromString('xl/drawings/_rels/drawing1.xml.rels', $this->drawingRelationships($logo['filename']));
-            $zip->addFile($logo['path'], 'xl/media/' . $logo['filename']);
+
+        foreach ($parts as $name => $xml) {
+            $this->assertValidXml($name, $xml);
+            if (!$zip->addFromString($name, $xml)) {
+                $zip->close();
+                throw new RuntimeException('No se pudo escribir la parte ' . $name . ' del archivo Excel.');
+            }
         }
-        $zip->addFromString('docProps/core.xml', $this->coreProperties());
-        $zip->addFromString('docProps/app.xml', $this->appProperties());
-        $zip->close();
+        if ($logo !== null && !$zip->addFile($logo['path'], 'xl/media/' . $logo['filename'])) {
+            $zip->close();
+            throw new RuntimeException('No se pudo incorporar el logo al archivo Excel.');
+        }
+        if (!$zip->close() || !is_file($path) || filesize($path) === 0) {
+            throw new RuntimeException('El archivo Excel no pudo finalizarse correctamente.');
+        }
     }
 
     private function sheet(array $rows, array $meta, $hasLogo) {
@@ -92,6 +108,16 @@ class SimpleXlsxWriter {
             '',
             $escaped
         );
+    }
+    private function assertValidXml($name, $xml) {
+        $previous = libxml_use_internal_errors(true);
+        libxml_clear_errors();
+        $valid = $xml !== '' && simplexml_load_string($xml) !== false;
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        if (!$valid) {
+            throw new RuntimeException('La parte ' . $name . ' contiene XML inválido.');
+        }
     }
     private function contentTypes($logo) { return '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'.($logo ? '<Default Extension="'.$logo['extension'].'" ContentType="'.$logo['mime'].'"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>' : '').'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>'; }
     private function rootRelationships() { return '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>'; }

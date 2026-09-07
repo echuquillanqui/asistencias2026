@@ -290,6 +290,9 @@ class ReportController {
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Content-Length: ' . filesize($temp));
+        // Evita que avisos o salida accidental previa se antepongan al ZIP y
+        // provoquen que Excel intente reparar partes válidas del libro.
+        while (ob_get_level() > 0) ob_end_clean();
         readfile($temp);
         unlink($temp);
         exit;
