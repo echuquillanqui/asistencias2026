@@ -73,6 +73,10 @@ class ReportController {
     public function export() {
         if (isset($_POST['start_date'])) {
             $start = $_POST['start_date']; $end = $_POST['end_date'];
+            if (!$this->validDate($start) || !$this->validDate($end) || $start > $end) {
+                header('Location: ?c=Report&err=filtro_invalido');
+                exit;
+            }
             $filterType = $_POST['filter_type'] ?? 'all';
             $siteName = '';
             $employeeId = null;
@@ -102,6 +106,10 @@ class ReportController {
             $horaLimite = $this->getFirstScheduleTime($this->settingModel->get('entry_time'), '08:00:00');
 
             $data = $this->attendanceModel->getHistoryByDate($start, $end, $siteName, $employeeId);
+            if (!$data) {
+                header('Location: ?c=Report&err=sin_datos');
+                exit;
+            }
             
             $filename = "Reporte_Asistencia_" . date('Ymd') . ".xls";
             header('Content-Type: application/vnd.ms-excel; charset=utf-8');
@@ -244,6 +252,10 @@ class ReportController {
         }
         [$siteName, $employeeId] = $this->validatedScope($_POST);
         $source = $this->attendanceModel->getSunafilData($start, $end, $siteName, $employeeId);
+        if (!$source['employees']) {
+            header('Location: ?c=Report&err=sin_datos');
+            exit;
+        }
         $rows = (new SunafilReportService())->buildRows($source['employees'], $source['logs'], $start, $end);
 
         $schedules = array_values(array_unique(array_filter(array_column($source['employees'], 'schedule_name'))));
@@ -255,16 +267,22 @@ class ReportController {
                 if ($out !== false && $return !== false && $return >= $out) $breaks[] = gmdate('H:i', $return - $out);
             }
         }
-        $siteLabel = $siteName ?: implode(', ', array_values(array_unique(array_filter(array_column($source['employees'], 'site_name')))));
+        $employeeSites = implode(', ', array_values(array_unique(array_filter(array_column($source['employees'], 'site_name')))));
+        $siteLabel = $siteName ?: ((string)$this->settingModel->get('workplace_name') ?: $employeeSites);
+        $logo = (string)$this->settingModel->get('employer_logo');
+        $logoPath = $logo !== '' ? __DIR__ . '/../../public/' . ltrim($logo, '/') : '';
         $metadata = [
             'business_name' => (string)$this->settingModel->get('employer_business_name'),
+            'trade_name' => (string)$this->settingModel->get('employer_trade_name'),
             'ruc' => (string)$this->settingModel->get('employer_ruc'),
             'site' => $siteLabel,
-            'address' => (string)$this->settingModel->get('site_address_' . $siteLabel),
+            'fiscal_address' => (string)$this->settingModel->get('employer_fiscal_address'),
+            'address' => (string)$this->settingModel->get('workplace_address'),
             'period' => date('d/m/Y', strtotime($start)) . ' al ' . date('d/m/Y', strtotime($end)),
             'generated_at' => date('d/m/Y H:i'),
             'schedule' => implode(', ', $schedules),
             'break_time' => implode(', ', array_values(array_unique($breaks))),
+            'logo_path' => is_file($logoPath) ? $logoPath : '',
         ];
         $temp = tempnam(sys_get_temp_dir(), 'sunafil_');
         (new SimpleXlsxWriter())->save($rows, $metadata, $temp);

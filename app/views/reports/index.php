@@ -29,6 +29,11 @@
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>Selecciona una sede o un empleado válido para generar el reporte.
             </div>
         <?php endif; ?>
+        <?php if (($_GET['err'] ?? '') === 'sin_datos'): ?>
+            <div class="alert alert-warning" role="alert">
+                <i class="bi bi-info-circle-fill me-2"></i>No se encontraron empleados o marcaciones para el rango y filtro seleccionados. Prueba con otro periodo.
+            </div>
+        <?php endif; ?>
 
         <div class="row">
             <div class="col-md-7">
