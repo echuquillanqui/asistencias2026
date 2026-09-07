@@ -78,6 +78,33 @@ class Attendance {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /** Carga en dos consultas todo lo necesario para el reporte, evitando N+1. */
+    public function getSunafilData($start, $end, $siteName = '', $employeeId = null) {
+        $employeeSql = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.site_name,
+                               s.name AS schedule_name, s.entry_time AS schedule_entry_time,
+                               s.check_out_time AS schedule_check_out_time,
+                               s.lunch_out_time AS schedule_lunch_out_time,
+                               s.lunch_return_time AS schedule_lunch_return_time
+                        FROM employees e LEFT JOIN schedules s ON e.schedule_id = s.id WHERE 1=1";
+        $params = [];
+        if ($siteName !== '') { $employeeSql .= " AND e.site_name = :site"; $params[':site'] = $siteName; }
+        if ($employeeId !== null) { $employeeSql .= " AND e.id = :employee"; $params[':employee'] = (int)$employeeId; }
+        $employeeSql .= " ORDER BY e.last_name, e.first_name";
+        $employeeStmt = $this->conn->prepare($employeeSql);
+        $employeeStmt->execute($params);
+        $employees = $employeeStmt->fetchAll(PDO::FETCH_ASSOC);
+        if (!$employees) return ['employees' => [], 'logs' => []];
+
+        $ids = array_column($employees, 'id');
+        $marks = implode(',', array_fill(0, count($ids), '?'));
+        $logSql = "SELECT id, employee_id, date_log, check_in_time, check_out_time, status
+                   FROM {$this->table} WHERE date_log BETWEEN ? AND ? AND employee_id IN ({$marks})
+                   ORDER BY date_log, employee_id, id";
+        $logStmt = $this->conn->prepare($logSql);
+        $logStmt->execute(array_merge([$start, $end], $ids));
+        return ['employees' => $employees, 'logs' => $logStmt->fetchAll(PDO::FETCH_ASSOC)];
+    }
+
     // 4. ESTADÍSTICAS ÚLTIMOS 7 DÍAS (Para el Gráfico)
     public function getWeeklyStats() {
         $query = "SELECT date_log, COUNT(*) as total 
