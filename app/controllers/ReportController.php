@@ -3,6 +3,8 @@ require_once '../app/config/db.php';
 require_once '../app/models/Attendance.php';
 require_once '../app/models/Employee.php';
 require_once '../app/models/Setting.php'; // 1. IMPORTAMOS EL MODELO DE AJUSTES
+require_once '../app/services/SunafilReportService.php';
+require_once '../app/services/SimpleXlsxWriter.php';
 
 class ReportController {
     private $attendanceModel;
@@ -227,6 +229,72 @@ class ReportController {
             echo '</Workbook>';
             exit;
         }
+    }
+
+    public function exportSunafil() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?c=Report');
+            exit;
+        }
+        $start = $_POST['start_date'] ?? '';
+        $end = $_POST['end_date'] ?? '';
+        if (!$this->validDate($start) || !$this->validDate($end) || $start > $end) {
+            header('Location: ?c=Report&err=filtro_invalido');
+            exit;
+        }
+        [$siteName, $employeeId] = $this->validatedScope($_POST);
+        $source = $this->attendanceModel->getSunafilData($start, $end, $siteName, $employeeId);
+        $rows = (new SunafilReportService())->buildRows($source['employees'], $source['logs'], $start, $end);
+
+        $schedules = array_values(array_unique(array_filter(array_column($source['employees'], 'schedule_name'))));
+        $breaks = [];
+        foreach ($source['employees'] as $employee) {
+            if (!empty($employee['schedule_lunch_out_time']) && !empty($employee['schedule_lunch_return_time'])) {
+                $out = strtotime($this->getFirstScheduleTime($employee['schedule_lunch_out_time'], ''));
+                $return = strtotime($this->getFirstScheduleTime($employee['schedule_lunch_return_time'], ''));
+                if ($out !== false && $return !== false && $return >= $out) $breaks[] = gmdate('H:i', $return - $out);
+            }
+        }
+        $siteLabel = $siteName ?: implode(', ', array_values(array_unique(array_filter(array_column($source['employees'], 'site_name')))));
+        $metadata = [
+            'business_name' => (string)$this->settingModel->get('employer_business_name'),
+            'ruc' => (string)$this->settingModel->get('employer_ruc'),
+            'site' => $siteLabel,
+            'address' => (string)$this->settingModel->get('site_address_' . $siteLabel),
+            'period' => date('d/m/Y', strtotime($start)) . ' al ' . date('d/m/Y', strtotime($end)),
+            'generated_at' => date('d/m/Y H:i'),
+            'schedule' => implode(', ', $schedules),
+            'break_time' => implode(', ', array_values(array_unique($breaks))),
+        ];
+        $temp = tempnam(sys_get_temp_dir(), 'sunafil_');
+        (new SimpleXlsxWriter())->save($rows, $metadata, $temp);
+        $filename = 'Reporte_SUNAFIL_' . $start . '_' . $end . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($temp));
+        readfile($temp);
+        unlink($temp);
+        exit;
+    }
+
+    private function validDate($value) {
+        $date = DateTime::createFromFormat('!Y-m-d', (string)$value);
+        return $date && $date->format('Y-m-d') === $value;
+    }
+
+    private function validatedScope(array $input) {
+        $filterType = $input['filter_type'] ?? 'all';
+        if ($filterType === 'site') {
+            $site = trim($input['site_name'] ?? '');
+            if ($site !== '' && in_array($site, $this->employeeModel->getSites(), true)) return [$site, null];
+        } elseif ($filterType === 'employee') {
+            $id = filter_var($input['employee_id'] ?? null, FILTER_VALIDATE_INT);
+            if ($id && $this->employeeModel->getById($id)) return ['', (int)$id];
+        } elseif ($filterType === 'all') {
+            return ['', null];
+        }
+        header('Location: ?c=Report&err=filtro_invalido');
+        exit;
     }
 }
 ?>

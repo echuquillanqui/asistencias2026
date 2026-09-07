@@ -80,8 +80,9 @@
                                 </select>
                             </div>
                             
-                            <div class="d-grid">
+                            <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-success btn-lg shadow"><i class="bi bi-download me-2"></i> Descargar Reporte</button>
+                                <button type="submit" formaction="?c=Report&amp;a=exportSunafil" class="btn btn-outline-success btn-lg shadow-sm"><i class="bi bi-file-earmark-spreadsheet me-2"></i> Reporte SUNAFIL</button>
                             </div>
                         </form>
                     </div>
